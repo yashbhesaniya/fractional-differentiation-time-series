@@ -1,0 +1,200 @@
+\documentclass{letter}
+
+% Euler for math | Palatino for rm | Helvetica for ss | Courier for tt
+\renewcommand{\rmdefault}{ppl} % rm
+\linespread{1.05}        % Palatino needs more leading
+\usepackage[scaled]{helvet} % ss
+\usepackage{courier} % tt
+%\usepackage{euler} % math
+\usepackage{eulervm} % a better implementation of the euler package (not in gwTeX)
+\normalfont
+\usepackage[T1]{fontenc}
+
+\usepackage{mathrsfs}
+\usepackage{hyperref}
+\usepackage{amssymb,amsthm}
+\usepackage{amsmath}
+\usepackage{bbold}
+\usepackage{color}
+
+% Hyperbolic Functions-----------------------------------------
+%
+\DeclareMathOperator{\sech}{sech}
+\DeclareMathOperator{\csch}{csch}
+\DeclareMathOperator{\arcsec}{arcsec}
+\DeclareMathOperator{\arccot}{arcCot}
+\DeclareMathOperator{\arccsc}{arcCsc}
+\DeclareMathOperator{\arccosh}{arcosh}
+\DeclareMathOperator{\arcsinh}{arsinh}
+\DeclareMathOperator{\arctanh}{artanh}
+\DeclareMathOperator{\arcsech}{arcsech}
+\DeclareMathOperator{\arccsch}{arcCsch}
+\DeclareMathOperator{\arccoth}{arcoth} %
+
+
+\DeclareMathOperator*{\slim}{s-lim}
+\newcommand{\MarkJ}{\marginpar{{\bf J}}}
+\newcommand{\MarkC}{\marginpar{{\bf C}}}
+
+
+\begin{document}
+
+Universidade de S\~ao Paulo \\
+Departamento de Matem\'atica Aplicada\\
+Christian J\"akel
+
+\bigskip
+\centerline{\bf Exercises Chapter 5}
+
+\bigskip
+\begin{itemize}
+
+\item[${\bf 5.1}$] Generate a time series from IID Guassian random process. 
+This is a memoryless, stationary series: 
+
+\bigskip
+We start as always:
+
+\bigskip
+\color{blue}
+import numpy as np
+
+import pandas as pd
+
+import matplotlib.pyplot as plt
+
+p = print
+\color{black}
+
+\bigskip
+We compute the weights: 
+	\[
+		\omega_k = - \omega_{k-1} \frac{d-k+}{k} \; , \qquad k = 0, 1, 2, \ldots \; .    
+	\]
+This is done in the following code (Snippet 5.1): 
+
+\color{blue}
+def getWeights(d, size):
+    w=[1.]
+    for k in range(1,size):
+        w_ = -w[-1]/k*(d-k+1)
+        w.append(w_)
+    w=np.array(w[::-1]).reshape(-1,1)
+    return w
+
+
+\color{black}
+
+\bigskip
+Next we look at the second piece in Snippet 5.1): 
+
+\color{blue}
+def plotWeights(dRange, nPlots, size):
+    w=pd.DataFrame()
+    for d in np.linspace(dRange[0], dRange[1], nPlots):
+        w_=getWeights(d, size = size)
+        w_ = pd.DataFrame(w_, index = range(w_.shape[0])[:: -1], columns = [d])
+        w=w.join(w_, how = "outer")
+    ax = w.plot(figsize=(10,8))
+    ax.legend(loc='upper left'); plt.show()
+    return
+ 
+%%%%%%%%%%
+
+plotWeights(dRange = [0,1], nPlots = 11, size = 6)
+plotWeights(dRange = [1,2], nPlots = 11, size = 6)
+
+%%%%%%%%%%
+
+def weight_by_d(dRange=[0,1], nPlots=11, size=6):
+    '''
+    dRange: the range of d
+    nPlots: the number of d we want to check
+    size: the data points used as an example
+    w: collection of w by different d value
+    '''
+    
+    w=pd.DataFrame()
+    
+    for d in np.linspace(dRange[0],dRange[1],nPlots):
+        w_=getWeights(d,size=size)
+        w_=pd.DataFrame(w_,index=range(w_.shape[0])\
+        [::-1],columns=[d])
+        w=w.join(w_,how='outer')
+        
+    return w
+weight_by_d = weight_by_d()
+weight_by_d   
+     
+%%%%%%%%%%
+
+\begin{itemize}
+\item[$a.)$] Compute the ADF Compute the ADF statistic on this series. What is the p-value?
+\item[$b.)$] Compute the cumulative sum of the observations. This is a non-stationary
+series without memory.
+\begin{itemize}
+\item[$i.)$] What is the order of integration of this cumulative series?
+\item[$ii.)$] Compute the ADF statistic on this series. What is the p-value?
+\end{itemize}
+\item[$c.)$] Differentiate the series twice. What is the p-value of this over-differentiated
+series?
+\end{itemize}
+
+\item[${\bf 5.2}$] Generate a time series that follows a sinusoidal function. This is a stationary
+series with memory.
+\begin{itemize}
+\item[$a.)$] Compute the ADF statistic on this series. What is the p-value?
+\item[$b.)$] Shift every observation by the same positive value. Compute the cumulative
+sum of the observations. This is a non-stationary series with memory.
+\begin{itemize}
+\item[$i.)$] Compute the ADF statistic on this series. What is the p-value?
+\item[$ii.)$] Apply an expanding window fracdiff, with $\tau = 10^{-2}$. 
+For what minimum $d$ value do you get a p-value below 5 \%?
+\item[$iii.)$] Apply FFD, with $\tau = 10^{-5}$. For what minimum d value do 
+you get a p-value below $5\%$?
+\end{itemize}
+\end{itemize}
+
+\item[${\bf 5.3}$] Take the series from exercise 2.b:
+\begin{itemize}
+\item[$a.)$] Fit the series to a sine function. What is the R-squared?
+\item[$b.)$] Apply FFD(d = 1). Fit the series to a sine function. What is the R-squared?
+\item[$c.)$] What value of d maximizes the R-squared of a sinusoidal fit on FFD(d).
+Why?
+\end{itemize}
+
+\item[${\bf 5.4}$] Take the dollar bar series on E-mini S \& P 500 futures. Using the code
+in Snippet 5.3, for some $d \in [0, 2]$, compute $fracDiff_FFD$ ($fracDiff
+_FFD(series,d),-d$). What do you get? Why?
+
+\item[${\bf 5.5}$] Take the dollar bar series on E-mini S \&P 500 futures.
+\begin{itemize}
+\item[$a.)$] Form a new series as a cumulative sum of log-prices.
+\item[$b.)$] Apply FFD, with $\tau = 10^{-5}$. Determine for what 
+minimum $d \in [0, 2]$ the new series is stationary.
+\item[$c.)$] Compute the correlation of the fracdiffseries to the original (untransformed)
+series.
+\item[$d.)$] Apply an Engel-Granger cointegration test on the original and fracdiffseries.
+Are they cointegrated? Why?
+\item[$e.)$] Apply a Jarque-Bera normality test on the fracdiff series.
+\end{itemize}
+
+\item[${\bf 5.6}$] Take the fracdiff series from exercise 5.
+\begin{itemize}
+\item[$a.)$] Apply a CUSUM filter (Chapter 2), where h is twice the standard deviation
+of the series.
+\item[$b.)$] Use the filtered timestamps to sample a features’ matrix. Use as one of the
+features the fracdiff value.
+\item[$c.)$] Form labels using the triple-barrier method, with symmetric horizontal bar-
+riers of twice the daily standard deviation, and a vertical barrier of 5 days.
+\item[$d.)$] Fit a bagging classifier of decision trees where:
+\begin{itemize}
+\item[$i.)$] The observed features are bootstrapped using the 
+sequential method from Chapter 4.
+\item[$ii.)$] On each bootstrapped sample, sample weights are 
+determined using the techniques from Chapter 4.
+\end{itemize}
+\end{itemize}
+\end{itemize}
+
+\end{document}
