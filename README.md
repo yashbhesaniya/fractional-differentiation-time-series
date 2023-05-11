@@ -42,7 +42,7 @@ For all functions, it is necessary to specify:
         Returns:
         -----
         output1: data type
-            Short description of the output.
+            Short description of the output1.
         ...
         '''
 ## Testing
@@ -58,7 +58,8 @@ To activate the environment:
     .\financeml_env\Scripts\activate.bat
 
 After that, the user can install all package dependencies by running the command:
-pip install -r requirements.txt
+    
+    pip install -r requirements.txt
 
 If you used a package that is not already mentioned in requirements.txt, please add the package and the correct distribution version. Do not change the already specified packages.
 
