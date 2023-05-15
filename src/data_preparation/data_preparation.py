@@ -1,21 +1,21 @@
 import pandas as pd
 
-class DataLoader():
-    
-    def __init__(self, 
+class DataLoader:
+
+    def __init__(self,
                  time_index_col:str,
                  keep_cols:list):
-        
+
         self.keep_cols = keep_cols
         self.time_index_col = time_index_col
 
-    def guess_format(self, 
+    def guess_format(self,
                      path_file:str)->str:
         return path_file.split('.')[-1].lower()
-        
+
     def load_dataset(self,
                      path_files:dict)->pd.DataFrame:
-        
+
         '''
         Returns all unified databases indexed by timestamp.
 
@@ -52,15 +52,15 @@ class DataLoader():
                                           right_index=True,
                                           how='outer')
                 df_ = df_.add_prefix(tag+ '_')
-                dataset = dataset.merge(df_, 
-                                        right_index=True, 
+                dataset = dataset.merge(df_,
+                                        right_index=True,
                                         left_index=True,
                                         how='outer')
-                
+
         return dataset
 
-    def file_read(self, 
-                  path_file:str, 
+    def file_read(self,
+                  path_file:str,
                   format:str) -> pd.DataFrame:
         assert format in ['parquet', 'csv', 'xlsx'], f'Format must be "parquet", "csv" or "xlsx", but received {format}'
 
@@ -88,9 +88,9 @@ class DataLoader():
         tablefreq['time'] = tablefreq.index.time
         tablefreq = tablefreq.groupby('date').agg({'time':['min', 'max','count']})
         return tablefreq
-    
-    
 
 
 
-        
+
+
+
