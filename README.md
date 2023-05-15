@@ -111,6 +111,7 @@ Some general rules:
 - If you don't have Git installed on your computer, you must install it in order to utilize the available resources. Additionally, we recommend using Visual Studio Code (VSC).
 
 Important commands:
+
         0. git clone https://github.com/Christian-Jaekel/ML-in-Finance.git (clone the project)
         1. git pull origin main (pull the latest changes from the remote main branch to your local main branch -  to make sure you have the latest version of main)
         2. git checkout -b branch_name (create and switch to a branch named 'branch_name').
