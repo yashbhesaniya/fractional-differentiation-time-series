@@ -88,9 +88,5 @@ class DataLoader():
         tablefreq['time'] = tablefreq.index.time
         tablefreq = tablefreq.groupby('date').agg({'time':['min', 'max','count']})
         return tablefreq
-    
-    
-
-
 
         
