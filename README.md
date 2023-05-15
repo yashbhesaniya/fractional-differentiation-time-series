@@ -22,9 +22,9 @@ Notable naming conventions include:
 ## Repository Organization
 Please observe the project structure. The modules **are exclusively .py scripts** and each directory contains an __init__.py file that imports the functions/classes used in that directory.
 
-All code must be placed in the /src directory as follows:
+All code must be placed in the /src/finance_ml directory as follows:
 
-    └── src
+    └── src/finance_ml
         ├── data_preparation
         │   ├── __init__.py
         │   └── data_preparation.py
