@@ -1,7 +1,7 @@
 # ML-in-Finance
 
 ## About
-This repository is created as part of the course MAP 5922 MAP 4006 at IME-USP. Its primary objective is to establish a complete pipeline for machine learning applications in finance, specifically focusing on the development and implementation of trading strategies.
+This repository is created as part of the MAP 5922 MAP 4006 course at IME-USP. Its primary objective is to establish a complete pipeline for machine learning applications in finance, specifically focusing on the development and implementation of trading strategies.
 
 The pipeline encompasses various stages, including data preparation, feature engineering, model training and evaluation, and strategy execution. Our aim is to provide a comprehensive framework that covers the entire process of developing and testing machine learning-based trading strategies.
 
@@ -101,27 +101,28 @@ If you have used a package that is not already listed in requirements.txt, pleas
 
 ## Git
 Some general rules:
-
-Always create branches.
-- Do not push directly to the main branch.
+- **Do not push directly to the main branch.**
 - Commit messages should be short but precise.
 - Pulling changes from the remote repository before creating a new branch to ensure you have the latest updates: git pull origin main.
-- Regularly updating your local main branch with the latest changes from the remote main branch: git pull origin main.
-- Periodically merging the main branch into your feature branch to incorporate any updates and resolve conflicts: git merge main.
+- Create a branch using the name of the branch you're working with
+- Regularly updating your local main branch with the latest changes from the remote main branch: git pull origin main (check that before  start updating/creating your code).
 - Using descriptive branch names that reflect the purpose or feature being worked on for better clarity and organization.
 - Reviewing and testing your code locally before pushing changes to the remote repository.
 - If you don't have Git installed on your computer, you must install it in order to utilize the available resources. Additionally, we recommend using Visual Studio Code (VSC).
 
 Important commands:
 
-        1. git checkout -b branch_name (create and switch to a branch named 'branch_name').
-        2. git checkout branch_name (switch to an existing branch named 'branch_name').
-        3. git add . (add all files from the working directory to the staging area).
-        4. git commit -m "short description" (commit files from the staging area to the local repository).
-        5. git push origin branch_name (send changes from the local repository to the remote repository (GitHub)).
-        6. git pull origin main (pull the latest changes from the remote main branch to your local main branch).
-        7. git pull origin branch_name (pull the latest changes from the remote repository to your local branch).
-        8. git merge main (merge the changes from the main branch into your current branch, if needed).
+        0. git clone https://github.com/Christian-Jaekel/ML-in-Finance.git (clone the project)
+        1. git pull origin main (pull the latest changes from the remote main branch to your local main branch -  to make sure you have the latest version of main)
+        2. git checkout -b branch_name (create and switch to a branch named 'branch_name').
+        3. git checkout branch_name (switch to an existing branch named 'branch_name').
+        4. git add . (add all files from the working directory to the staging area).
+        5. git commit -m "short description" (commit files from the staging area to the local repository).
+        6. git push origin branch_name (send changes from the local repository to the remote repository (GitHub)).
+        7. **Do not push to the main branch**
+
+For example, if you're writing the code for the module "fractional_differentiation," your 'branch_name' should be 'fractional_differentiation' or an abbreviation like 'frac_diff'. After your update, we'll merge it into the main branch. This way, the next group that presents will have access to all the available modules that were previously presented by other groups
+
 
 
 
