@@ -84,7 +84,7 @@ There will be a folder in the repository called 'tests'. Whenever you make a con
 Unit testing is crucial to ensure that version differences leading to errors are detected. They also help in scenarios where function B depends on function A, as any intended changes in function A should not silently affect the behavior of function B. While bug fixes and other changes are inevitable, we want to ensure that any downstream effects are detected. Before submitting a pull request, run all tests, including both the ones you added and those already present in the codebase. If any test fails, make appropriate edits to your code.
 
 
-## Requirements
+## Using virtual environment and updating requirements.txt
 We recommend that each user create a virtual environment. This can be easily done by running the following command in a terminal:
 
     python -m venv financeml_env
@@ -97,7 +97,7 @@ After activating the environment, install all package dependencies by running th
     
     pip install -r requirements.txt
 
-If you have used a package that is not already listed in requirements.txt, please add the package along with its corresponding distribution version. However, please try to avoid modifying the packages that are already specified.
+**If you have used a package that is not already listed in requirements.txt, please add the package along with its corresponding distribution version.** However, please try to avoid modifying the packages that are already specified.
 
 ## Git
 Some general rules:
