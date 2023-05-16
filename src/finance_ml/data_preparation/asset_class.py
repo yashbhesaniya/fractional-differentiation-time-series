@@ -15,3 +15,7 @@ class Asset:
             data.index.name = index_name
 
         self.data = data
+
+    def __repr__(self):
+        return f"Asset(ticker='{self.ticker}', index_name='{self.index_name}')"
+

@@ -1,8 +1,6 @@
 import pandas as pd
-
 from typing import List
-
-from .asset_class import Asset
+from asset_class import Asset
 
 class Portfolio:
     def __init__(self,
@@ -52,7 +50,8 @@ class Portfolio:
         except KeyError:
             raise KeyError("Ticker not in assets")
 
-
+    def __repr__(self):
+        return f"Portfolio(assets={list(self.assets.values())})"
 
 
 
