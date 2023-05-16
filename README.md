@@ -99,7 +99,10 @@ After activating the environment, install all package dependencies by running th
 
 **If you have used a package that is not already listed in requirements.txt, please add the package along with its corresponding distribution version.** However, please try to avoid modifying the packages that are already specified.
 
-## Git
+## Git and Github
+
+![Git Diagram](https://github.com/Christian-Jaekel/ML-in-Finance/assets/54689450/6d4a3b91-17ab-44f4-8634-2ec621b94199)
+
 Some general rules:
 - **Do not push directly to the main branch.**
 - Commit messages should be short but precise.
