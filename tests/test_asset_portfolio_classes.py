@@ -3,9 +3,9 @@ import pytest
 
 import pandas as pd
 
-from src.data_preparation.data_preparation import DataLoader
-from src.data_preparation.asset_class import Asset
-from src.data_preparation.portfolio_class import Portfolio
+from src.finance_ml.data_preparation.data_preparation import DataLoader
+from src.finance_ml.data_preparation.asset_class import Asset
+from src.finance_ml.data_preparation.portfolio_class import Portfolio
 
 def test_asset():
     '''
