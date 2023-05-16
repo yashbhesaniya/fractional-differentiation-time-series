@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import List
-from asset_class import Asset
+from src.finance_ml.data_preparation.asset_class import Asset
 
 class Portfolio:
     def __init__(self,
