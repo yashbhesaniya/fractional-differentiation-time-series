@@ -53,7 +53,7 @@ class Denoising(BaseEstimator, TransformerMixin):
     
     def fitKDE(self, 
                obs: np.array, 
-               kernel: str ='gaussian', 
+               kernel: str = 'gaussian', 
                x: np.array = None             ) -> pd.Series(dtype = float):
         """
         Adapted from Chap. 2 of  "Machine Learning for Asset Managers", by
@@ -214,11 +214,11 @@ class Denoising(BaseEstimator, TransformerMixin):
             corr (np.ndarray): denoised correlation matrix
         """
         
-        eVal_=np.diag(eVal).copy() 
-        eVal_[nFacts:]=eVal_[nFacts:].sum()/float(eVal_.shape[0]-nFacts)  
-        eVal_=np.diag(eVal_)
-        corr1=np.dot(eVec,eVal_).dot(eVec.T) 
-        corr1=self.cov2corr(corr1)
+        eVal_ = np.diag(eVal).copy() 
+        eVal_[nFacts:] = eVal_[nFacts:].sum()/float(eVal_.shape[0]-nFacts)  
+        eVal_ = np.diag(eVal_)
+        corr1 = np.dot(eVec,eVal_).dot(eVec.T) 
+        corr1 = self.cov2corr(corr1)
         return corr1
  
     def denoisedCorr2(self, 
@@ -239,11 +239,11 @@ class Denoising(BaseEstimator, TransformerMixin):
             corr (np.ndarray): denoised correlation matrix
         """
         # Remove noise from corr through targeted shrinkage
-        eValL,eVecL=eVal[:nFacts,:nFacts],eVec[:,:nFacts]    
-        eValR,eVecR=eVal[nFacts:,nFacts:],eVec[:,nFacts:]    
-        corr0=np.dot(eVecL,eValL).dot(eVecL.T) 
-        corr1=np.dot(eVecR,eValR).dot(eVecR.T) 
-        corr2=corr0+self.__alpha*corr1+(1-self.__alpha)*np.diag(np.diag(corr1)) 
+        eValL,eVecL = eVal[:nFacts,:nFacts],eVec[:,:nFacts]    
+        eValR,eVecR = eVal[nFacts:,nFacts:],eVec[:,nFacts:]    
+        corr0 = np.dot(eVecL,eValL).dot(eVecL.T) 
+        corr1 = np.dot(eVecR,eValR).dot(eVecR.T) 
+        corr2 = corr0+self.__alpha*corr1+(1-self.__alpha)*np.diag(np.diag(corr1)) 
         return corr2
    
     def fit(self, 
@@ -321,13 +321,11 @@ class Denoising(BaseEstimator, TransformerMixin):
                 used to calculate the covariance matrix.
 
         Returns:
-            (tuple): tuple containing:
-                Cov1 (np.ndarray): Denoised covariance matrix.
-                Corr1 (np.ndarray): Denoised correlation matrix.
-                eVal1 (np.ndarray): Eigenvalues of Correlation Matrix
-                eVec1 (np.ndarray): Eigenvectors of Correlation Matrix
+            None
 
         """
 
-        pass
+        self.fit(X)
+        self.transform(X)
+        
     
