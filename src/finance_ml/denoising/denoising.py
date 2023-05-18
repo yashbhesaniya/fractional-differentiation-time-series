@@ -250,6 +250,20 @@ class Denoising(BaseEstimator, TransformerMixin):
             X: pd.DataFrame(dtype=float), 
             y = None):
                
+        """
+        Method defined for compatibility purposes.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+    
+            X (pd.DataFrame): Columns of dataframe containing the variables to be
+                used to calculate covariance matrix.
+
+        Returns:
+            self (objext)
+
+        """
         return self
         
     def transform(self, 
