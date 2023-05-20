@@ -33,7 +33,7 @@ All code must be placed in the /src/finance_ml directory as follows:
         │   ├── fractional_differentiation.py
         │   └── some_other_module.py
         └── ...
-        
+
 ## Jupyter notebooks (.ipynb)
 While Jupyter Notebooks (.ipynb) are useful for prototyping, data visualization, and writing usage examples, they are not appropriate for building code pipelines. Therefore, please ensure that you do not add .ipynb files to the \src folder.
 
@@ -69,7 +69,15 @@ For all functions, it is necessary to specify:
             Short description of the output1.
         ...
         '''
-        
+
+## File paths
+
+A common practice is to refer to files in the same directory as the one your code is in simply by their name. This behavior presents some problems when using more complicated file structures, such as when refering to files outside of the current directory. Instead, we'll use **absolute file paths** for importing. This means you have to specify the full path from the root directory, including 'src', and it works if you try to import from any folder - from a module inside 'src', a test file inside 'tests' or an example file inside 'notebooks'.
+
+Example:
+
+    from src.finance_ml.data_preparation.asset_class import Asset
+
 ## About using Classes
 Using classes isn't mandatory, but it's recommended whenever it meets certain criteria, such as:
 
@@ -77,12 +85,52 @@ Using classes isn't mandatory, but it's recommended whenever it meets certain cr
 - The module relies on multiple functions and follows a logical flow with multiple steps.
 - When it's possible to utilize classical methods like fit, transform, or predict
 
-   
+
 ## Unit testing
-There will be a folder in the repository called 'tests'. Whenever you make a contribution, add a file (or edit an existing one) with functions designed for testing the code you just built. The file should follow the standards of the pytest library, which means it should be named 'test_.py' ( being the rest of the file name). The functions to be tested should also be named 'test_' and should include one or more assert statements to verify that your code works as intended. Please avoid using 'test_.py' or '*_test.py' names in other files.
+There will be a folder in the repository called 'tests'. Whenever you make a contribution, add a file (or edit an existing one) with functions designed for testing the code you just built. The file should follow the standards of the [pytest](https://docs.pytest.org/) library, which means it should be named 'test_.py' (_ being the rest of the file name). The functions to be tested should also be named 'test_'. Please avoid using 'test_.py' or '*_test.py' names in other files.
 
-Unit testing is crucial to ensure that version differences leading to errors are detected. They also help in scenarios where function B depends on function A, as any intended changes in function A should not silently affect the behavior of function B. While bug fixes and other changes are inevitable, we want to ensure that any downstream effects are detected. Before submitting a pull request, run all tests, including both the ones you added and those already present in the codebase. If any test fails, make appropriate edits to your code.
+Testing functions, as specified by the `pytest` package, should include one or more statements to verify that your code works as intended. The most basic statement is
 
+    assert <boolean condition>
+
+Examples:
+
+     assert object.atribute == 2
+     assert isinstance(object, MyClass)
+
+If you implement errors and warnings in your code, you can test that they're being raised with
+
+    with pytest.raises(MyException):
+        code block
+
+    with pytest.warns(MyWarning):
+        code block
+
+Example:
+
+    my_dict = {1:"a", 2:"b"}
+    with pytest.raises(KeyError):
+        my_variable = my_dict[3]
+
+Files for unit testing should be located in the 'tests' folder:
+
+    ├── src/finance_ml
+    │   ├── your_directory
+    │   └── ...
+    ├── tests
+    │   ├── test_your_directory.py
+    │   └── ...
+    └── ...
+
+In order to run your tests, install the `pytest` package and:
+
+    - Open your terminal at your local repository (the ML-in-Finance folder)
+    - Type PYTHONPATH=src
+    - Type python -m pytest tests (you may need to replace python with python3)
+
+These commands were tested in WSL2 (Windows Subsystem for Linux) terminal. If you have trouble making the commands run, let us know.
+
+Unit testing is crucial to ensure that version differences leading to errors are detected and the code we develop is working as intended. Ideally, they should cover all aspects of your contribution, including instantiation of classes and the behavior of all methods. They also help in scenarios where function B depends on function A, as any intended changes in function A should not silently affect the behavior of function B. While bug fixes and other changes are inevitable, we want to ensure that any downstream effects are detected. Before submitting a pull request, run all tests, including both the ones you added and those already present in the codebase. If any test fails, make appropriate edits to your code.
 
 ## Using virtual environment and updating requirements.txt
 We recommend that each user create a virtual environment. This can be easily done by running the following command in a terminal:
@@ -94,7 +142,7 @@ To activate the environment, use the following command:
     .\financeml_env\Scripts\activate.bat
 
 After activating the environment, install all package dependencies by running the following command:
-    
+
     pip install -r requirements.txt
 
 **If you have used a package that is not already listed in requirements.txt, please add the package along with its corresponding distribution version.** However, please try to avoid modifying the packages that are already specified.
@@ -106,11 +154,12 @@ After activating the environment, install all package dependencies by running th
 Some general rules:
 - **Do not push directly to the main branch.**
 - Commit messages should be short but precise.
-- Pulling changes from the remote repository before creating a new branch to ensure you have the latest updates: git pull origin main.
+- Pull changes from the remote repository before creating a new branch to ensure you have the latest updates: git pull origin main.
 - Create a branch using the name of the branch you're working with
-- Regularly updating your local main branch with the latest changes from the remote main branch: git pull origin main (check that before  start updating/creating your code).
-- Using descriptive branch names that reflect the purpose or feature being worked on for better clarity and organization.
-- Reviewing and testing your code locally before pushing changes to the remote repository.
+- Regularly update your local main branch with the latest changes from the remote main branch: git pull origin main (check that before you start updating/creating your code).
+- Usie descriptive branch names that reflect the purpose or feature being worked on for better clarity and organization.
+- After making your changes locally, switch to main, pull the remote version of main and merge it into the local branch you worked on before pushing to the remote repository.
+- Review and test (manually and with `pytest`) your code locally before pushing changes to the remote repository. Do this again after merging the updated version of main to your branch.
 - If you don't have Git installed on your computer, you must install it in order to utilize the available resources. Additionally, we recommend using Visual Studio Code (VSC).
 
 Important commands:
@@ -121,12 +170,20 @@ Important commands:
         3. git checkout branch_name (switch to an existing branch named 'branch_name').
         4. git add . (add all files from the working directory to the staging area).
         5. git commit -m "short description" (commit files from the staging area to the local repository).
-        6. git push origin branch_name (send changes from the local repository to the remote repository (GitHub)).
-        7. **Do not push to the main branch**
+        6. git merge other_branch (includes changes made in branch_name to other_branch)
+        7. git push origin branch_name (send changes from the local repository to the remote repository (GitHub)).
+        8. **Do not push to the main branch**
 
-For example, if you're writing the code for the module "fractional_differentiation," your 'branch_name' should be 'fractional_differentiation' or an abbreviation like 'frac_diff'. After your update, we'll merge it into the main branch. This way, the next group that presents will have access to all the available modules that were previously presented by other groups
+For example, if you're writing the code for the module "fractional_differentiation", your 'branch_name' should be 'fractional_differentiation' or an abbreviation like 'frac_diff'.
 
+Once you've completed your contribution and assured:
+- you merged an updated version of main before pushing
+- your module is in .py files
+- your files are properly documented
+- you have a test file that asserts your code behaves as intended
+- you pass all tests, including those of other test files
 
+you may make a pull resquest (PR) from the remote branch to integrate your code into main. Add one of FabioMMaia or AFumis as reviewers, and if necessary make a short description. Once approved, your code will be available for others to use in their own contributions.
 
 
 
