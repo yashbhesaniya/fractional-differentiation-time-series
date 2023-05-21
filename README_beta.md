@@ -29,7 +29,6 @@ Additional Guidelines:
 
 - Avoid making unnecessary changes to existing code or functions, unless they are aimed at improvements or bug fixes.
 - Changing the names of references that could impact other code or tests and potentially cause crashes should be avoided.
-- Whenever possible, consider adding new functions or methods rather than replacing existing ones. This helps maintain compatibility and avoids breaking dependencies.
 
 By adhering to these guidelines, we can ensure that our code contributions are well-organized, thoroughly tested, and compatible with the existing codebase. This promotes collaboration, readability, and maintainability within the project.
 
@@ -65,7 +64,7 @@ All code must be placed in the /src/finance_ml directory as follows:
 ## Jupyter notebooks (.ipynb)
 While Jupyter Notebooks (.ipynb) are useful for prototyping, data visualization, and writing usage examples, they are not appropriate for building code pipelines. Therefore, please ensure that you do not add .ipynb files to the \src folder.
 
-However, if you believe it's a good idea to share a use case to illustrate the usage of your implemented module, you can utilize the \notebooks folder. Just make sure to name the file according to your module.
+However, we encourage you to share a use case that demonstrates the usage of your implemented module using a Jupyter Notebook (.ipynb) file. Just make sure to name the file according to your module.
 
     └── notebooks
         ├── data_preparation.ipynb
