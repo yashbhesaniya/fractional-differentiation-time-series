@@ -7,6 +7,33 @@ The pipeline encompasses various stages, including data preparation, feature eng
 
 This README serves as a reference for contributors to the shared GitHub repository used for the course. When adding your code, please consult this README for guidance and feel free to make suggestions to further improve the repository.
 
+
+## Important
+
+Before submitting a pull request, please ensure the following:
+
+Module Organization and Documentation:
+
+Make sure that all the relevant .py modules are placed in their respective folders with proper organization.
+Provide clear and comprehensive documentation for each module, explaining its purpose, functionality, and usage.
+Test Implementation:
+
+Implement tests for your code in the \test directory.
+Ensure that all tests pass successfully before submitting the pull request.
+Thoroughly test your code to cover different scenarios and edge cases, aiming for comprehensive test coverage.
+Usage of Jupyter Notebooks:
+
+It is highly recommended to include a use case example in a Jupyter Notebook (.ipynb) format.
+This will help other team members understand and interact with your code more effectively, facilitating collaboration and exploration.
+Additional Guidelines:
+
+Avoid making unnecessary changes to existing code or functions, unless they are aimed at improvements or bug fixes.
+Changing the names of references that could impact other code or tests and potentially cause crashes should be avoided.
+Whenever possible, consider adding new functions or methods rather than replacing existing ones. This helps maintain compatibility and avoids breaking dependencies.
+By adhering to these guidelines, we can ensure that our code contributions are well-organized, thoroughly tested, and compatible with the existing codebase. This promotes collaboration, readability, and maintainability within the project.
+
+Please review your code and ensure compliance with these guidelines before submitting your pull request.
+
 ## Style guide
 **All contributions should be fully in English.** This includes both code, such as variable names, and comments. Naming should follow the Python style guide. Variables should also be given descriptive names, even if they're longer. For example, it is better to name a variable 'bovespa_data_loader' than 'bovdl'. It reduces the cognitive strain of reading a fellow contributor's code.
 
