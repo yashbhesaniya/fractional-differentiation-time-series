@@ -7,6 +7,35 @@ The pipeline encompasses various stages, including data preparation, feature eng
 
 This README serves as a reference for contributors to the shared GitHub repository used for the course. When adding your code, please consult this README for guidance and feel free to make suggestions to further improve the repository.
 
+
+## Important
+
+Before submitting a pull request, please ensure the following:
+
+**1. Module Organization and Documentation:**
+- Make sure that all the relevant .py modules are placed in their respective folders with proper organization.
+- Provide clear and comprehensive documentation for each module, explaining its purpose, functionality, and usage.
+
+**2. Test Implementation:**
+- Implement tests for your code in the \test directory.
+- Ensure that all tests pass successfully before submitting the pull request.
+- Thoroughly test your code to cover different scenarios and edge cases, aiming for comprehensive test coverage.
+
+**3. Usage of Jupyter Notebooks:**
+- It is highly recommended to include a use case example in a Jupyter Notebook (.ipynb) format.
+- This will help other team members understand and interact with your code more effectively, facilitating collaboration and exploration.
+
+Additional Guidelines:
+
+- Avoid making unnecessary changes to existing code or functions, unless they are aimed at improvements or bug fixes.
+- Changing the names of references that could impact other code or tests and potentially cause crashes should be avoided.
+
+By adhering to these guidelines, we can ensure that our code contributions are well-organized, thoroughly tested, and compatible with the existing codebase. This promotes collaboration, readability, and maintainability within the project.
+
+For more detailed information and explanations, please refer to the following sections. These sections provide further guidance and instructions.
+
+**Please review your code and ensure compliance with these guidelines before submitting your pull request.**
+
 ## Style guide
 **All contributions should be fully in English.** This includes both code, such as variable names, and comments. Naming should follow the Python style guide. Variables should also be given descriptive names, even if they're longer. For example, it is better to name a variable 'bovespa_data_loader' than 'bovdl'. It reduces the cognitive strain of reading a fellow contributor's code.
 
@@ -37,7 +66,7 @@ All code must be placed in the /src/finance_ml directory as follows:
 ## Jupyter notebooks (.ipynb)
 While Jupyter Notebooks (.ipynb) are useful for prototyping, data visualization, and writing usage examples, they are not appropriate for building code pipelines. Therefore, please ensure that you do not add .ipynb files to the \src folder.
 
-However, if you believe it's a good idea to share a use case to illustrate the usage of your implemented module, you can utilize the \notebooks folder. Just make sure to name the file according to your module.
+However, we encourage you to share a use case that demonstrates the usage of your implemented module using a Jupyter Notebook (.ipynb) file. Just make sure to name the file according to your module.
 
     └── notebooks
         ├── data_preparation.ipynb
@@ -122,13 +151,13 @@ Files for unit testing should be located in the 'tests' folder:
     │   └── ...
     └── ...
 
-In order to run your tests, install the `pytest` package and:
+In order to run your tests, make sure to install the `pytest` package (by running pip install pytest in the command prompt) and do the following commands:
 
-    - Open your terminal at your local repository (the ML-in-Finance folder)
-    - Type PYTHONPATH=src
-    - Type python -m pytest tests (you may need to replace python with python3)
+    - Open your terminal or command prompt and navigate to the root directory of your local repository (the ML-in-Finance folder).
+    - Set the PYTHONPATH environment variable to include the src directory. In Linux, you can do this by typing PYTHONPATH=src. If you're using Windows, use the command set PYTHONPATH=src.
+    - Run the command python -m pytest tests in the terminal or command prompt. If you're using Linux, you may need to replace python with python3 depending on your Python installation.
 
-These commands were tested in WSL2 (Windows Subsystem for Linux) terminal. If you have trouble making the commands run, let us know.
+By executing these commands, you will run the pytest framework and it will discover and execute the tests located (all .py files) in the tests directory.These commands were tested in WSL2 (Windows Subsystem for Linux) terminal and in a Command Prompt in Windows. If you have trouble making the commands run, let us know.
 
 Unit testing is crucial to ensure that version differences leading to errors are detected and the code we develop is working as intended. Ideally, they should cover all aspects of your contribution, including instantiation of classes and the behavior of all methods. They also help in scenarios where function B depends on function A, as any intended changes in function A should not silently affect the behavior of function B. While bug fixes and other changes are inevitable, we want to ensure that any downstream effects are detected. Before submitting a pull request, run all tests, including both the ones you added and those already present in the codebase. If any test fails, make appropriate edits to your code.
 
