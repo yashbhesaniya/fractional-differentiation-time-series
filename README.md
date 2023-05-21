@@ -177,6 +177,7 @@ After activating the environment, install all package dependencies by running th
 **If you have used a package that is not already listed in requirements.txt, please add the package along with its corresponding distribution version.** However, please try to avoid modifying the packages that are already specified.
 
 ## Git and Github
+Git is a crucial tool for version control, enabling efficient collaboration on software development projects. It consists of a local repository, where changes are made to project files, and a remote repository, such as GitHub, for sharing and synchronizing changes. The workflow involves the working directory for file modifications, the staging area for preparing changes, and the repository for permanently storing committed changes. To track changes, use "git add" to stage modified files and "git commit" to save changes with a descriptive message. Collaborate by using "git pull" to fetch and merge remote changes and "git push" to upload local changes. A diagram illustrating the working directory, staging area, and repository context is available for reference.
 
 ![Git Diagram](https://github.com/Christian-Jaekel/ML-in-Finance/assets/54689450/6d4a3b91-17ab-44f4-8634-2ec621b94199)
 
