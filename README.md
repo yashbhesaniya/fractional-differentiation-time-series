@@ -151,7 +151,7 @@ Files for unit testing should be located in the 'tests' folder:
     │   └── ...
     └── ...
 
-In order to run your tests, make sure to install the `pytest` package (by running pip install pytest in the command prompt) and do the following commands:
+In order to run your tests, make sure to install the `pytest` package (by running `pip install pytest` in the command prompt) and do the following commands:
 
     - Open your terminal or command prompt and navigate to the root directory of your local repository (the ML-in-Finance folder).
     - Set the PYTHONPATH environment variable to include the src directory. In Linux, you can do this by typing PYTHONPATH=src. If you're using Windows, use the command set PYTHONPATH=src.
