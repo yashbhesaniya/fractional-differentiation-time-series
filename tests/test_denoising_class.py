@@ -48,22 +48,22 @@ def test_denoising():
     print('Correlation matrices produced PASSED!')
     
 def test_denoising_param_alpha():
-    with pytest.warns(Warning):
+    with pytest.raises(ValueError):
         assert Denoising(alpha = 1.5)
         
 def test_denoising_param_bWidth():
-    with pytest.warns(Warning):
+    with pytest.raises(ValueError):
         assert Denoising(bWidth = -1.5)
         
 def test_denoising_param_method():
-    with pytest.warns(Warning):
+    with pytest.raises(ValueError):
         assert Denoising(method = 'some invalid method')
         
 def test_denoising_param_nFacts():
-    with pytest.warns(Warning):
+    with pytest.raises(ValueError):
         assert Denoising(nFacts = -11.5)
         
 def test_denoising_param_q():
-    with pytest.warns(Warning):
+    with pytest.raises(ValueError):
         assert Denoising(q = 0.15)
         
