@@ -17,13 +17,38 @@ class Denoising(BaseEstimator, TransformerMixin):
                  method: str = 'constant_residuals',
                  bWidth: float = 0.01,
                  ):
+        if (type(alpha) != float) | (alpha <= 0) | (alpha >= 1):
+            raise ValueError('Denoising Class - Parameter alpha must be float, between 0 and 1')
+
+        #if (type(alpha) != float) | (alpha <= 0) | (alpha >= 1):  # Don't stops the execution
+        #    try: 
+        #        raise ValueError('Denoising Class - Parameter alpha must be float, between 0 and 1')
+        #    except ValueError:
+        #        print('Denoising Class - Parameter alpha must be float, between 0 and 1')
+
+        if (type(bWidth) != float) | (bWidth <= 0):
+            raise ValueError('Denoising Class - Parameter bWidth must be float, positive')
         
-        self.__alpha = alpha
-        self.__pts = pts
-        self.__nFacts = nFacts
-        self.__q = q
-        self.__method = method
-        self.__bWidth = bWidth
+        if (type(method) != str) | (method not in set(['constant_residuals', 'shrinkage'])):
+            raise ValueError('Denoising Class - Parameter method must be either constant_residuals or shrinkage')
+
+        if (type(nFacts) != int) | (nFacts <= 0):
+            raise ValueError('Denoising Class - Parameter nFacts must be positive')
+            
+        if  (type(pts) != int) | (pts <= 1):
+            raise ValueError('Denoising Class - Parameter pts must be greater than 1')
+            
+        if (type(q) != float) | (q <= 1.0):
+            raise ValueError('Denoising Class - Parameter q=T/N must be float, greater than 1.0')
+        
+        self.__alpha = alpha    # alpha (float): Regulates the amount of shrinkage among the eigenvectors
+                                # and eigenvalues associated with noise (default=.5)
+        self.__pts = pts        # pts (int): No. of points used to construct the PDF (default=1000)
+        self.__nFacts = nFacts  # nFacts (int): No. of significant factors (default=100)
+        self.__q = q            # q (float): T/N where T is the no. of rows and N the no. of columns (default=10)
+        self.__method = method  # method (str): Method for denoising ['constant_residuals', 'shrinkage']
+                                #   (default='constant_residuals')
+        self.__bWidth = bWidth  # bWidth (float): The bandwidth of the kernel (default=.01)
             
     def mpPDF(self,
               var: float  ) -> pd.Series(dtype = float):
@@ -34,8 +59,6 @@ class Denoising(BaseEstimator, TransformerMixin):
         Creates a Marchenko-Pastur Probability Density Function
         Args:
             var (float): Variance
-            q (float): T/N where T is the number of rows and N the number of columns
-            pts (int): Number of points used to construct the PDF
         Returns:
             pd.Series: Marchenko-Pastur PDF
         """
@@ -63,7 +86,6 @@ class Denoising(BaseEstimator, TransformerMixin):
             on which the fit KDE will be evaluated. It is the empirical PDF
         Args:
             obs (np.ndarray): observations to fit. Commonly is the diagonal of Eigenvalues
-            bWidth (float): The bandwidth of the kernel. Default is .25
             kernel (str): The kernel to use. Valid kernels are [‘gaussian’|’tophat’|
                 ’epanechnikov’|’exponential’|’linear’|’cosine’] Default is ‘gaussian’.
             x (np.ndarray): x is the array of values on which the fit KDE will be evaluated
@@ -83,7 +105,8 @@ class Denoising(BaseEstimator, TransformerMixin):
         return pdf
 
     @staticmethod
-    def getPCA( matrix: np.array):
+    def getPCA( matrix: np.array) -> (np.ndarray([]),
+                                      np.ndarray([])):
         """
         Adapted from Chap. 2 of  "Machine Learning for Asset Managers", by
         - Marcos M. Lopez de Prado - 1st. edition
@@ -153,16 +176,13 @@ class Denoising(BaseEstimator, TransformerMixin):
         Args:
             var (float): Variance
             eVal (np.ndarray): Eigenvalues to fit.
-            q (float): T/N where T is the number of rows and N the number of columns
-            bWidth (float): The bandwidth of the kernel.
-            pts (int): Number of points used to construct the PDF
     
         Returns:
             float: sum squared error
         """
         # Fit error
         pdf0 = self.mpPDF(var)  # theoretical pdf
-        pdf1 = self.fitKDE(eVal, x=pdf0.index.values)  # empirical pdf
+        pdf1 = self.fitKDE(eVal, x = pdf0.index.values)  # empirical pdf
         sse = np.sum((pdf1 - pdf0) ** 2)
         return sse
     
@@ -176,8 +196,6 @@ class Denoising(BaseEstimator, TransformerMixin):
             this, is a signal eigenvalue
         Args:
             eVal (np.ndarray): Eigenvalues to fit on errPDFs
-            q (float): T/N where T is the number of rows and N the number of columns
-            bWidth (float): The bandwidth of the kernel.
     
         Returns:
             (tuple): tuple containing:
@@ -208,16 +226,16 @@ class Denoising(BaseEstimator, TransformerMixin):
         Args:
             eVal (np.ndarray): Eigenvalues of Correlation Matrix
             eVec (np.ndarray): Eigenectors of Correlation Matrix
-            nFacts (integer): The bandwidth of the kernel.
+            nFacts (int): No. of significant factors
     
         Returns:
             corr (np.ndarray): denoised correlation matrix
         """
         
         eVal_ = np.diag(eVal).copy() 
-        eVal_[nFacts:] = eVal_[nFacts:].sum()/float(eVal_.shape[0]-nFacts)  
+        eVal_[nFacts:] = eVal_[nFacts:].sum() / float(eVal_.shape[0] - nFacts)  
         eVal_ = np.diag(eVal_)
-        corr1 = np.dot(eVec,eVal_).dot(eVec.T) 
+        corr1 = np.dot(eVec, eVal_).dot(eVec.T) 
         corr1 = self.cov2corr(corr1)
         return corr1
  
@@ -233,7 +251,7 @@ class Denoising(BaseEstimator, TransformerMixin):
         Args:
             eVal (np.ndarray): Eigenvalues of Correlation Matrix
             eVec (np.ndarray): Eigenectors of Correlation Matrix
-            nFacts (integer): The bandwidth of the kernel.
+            nFacts (int): No. of significant factors
     
         Returns:
             corr (np.ndarray): denoised correlation matrix
@@ -340,6 +358,8 @@ class Denoising(BaseEstimator, TransformerMixin):
         """
 
         self.fit(X)
-        self.transform(X)
+        cov1, corr1, eVal1, eVec1 = self.transform(X)
+        
+        return cov1, corr1, eVal1, eVec1
         
     
