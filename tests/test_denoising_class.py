@@ -47,28 +47,23 @@ def test_denoising():
     assert np.logical_and(corr1 >= -1.0, corr1 <= 1.0).all()
     print('Correlation matrices produced PASSED!')
     
-    # Teste Instantiation error handling (invalid alpha)
-    print('\nTesting Error handling of Denoising class...')
+def test_denoising_param_alpha():
     with pytest.warns(Warning):
-        dp_error = Denoising(alpha = 1.5)
-    assert dp_error
-    
-    # Teste Instantiation error handling (invalid bWidth)
+        assert Denoising(alpha = 1.5)
+        
+def test_denoising_param_bWidth():
     with pytest.warns(Warning):
-        dp_error = Denoising(bWidth = 1.5)
-    assert dp_error
-
-    # Teste Instantiation error handling (invalid method)
+        assert Denoising(bWidth = -1.5)
+        
+def test_denoising_param_method():
     with pytest.warns(Warning):
-        dp_error = Denoising(method = 'some invalid method')
-    assert dp_error
-    
-    # Teste Instantiation error handling (invalid nFacts)
+        assert Denoising(method = 'some invalid method')
+        
+def test_denoising_param_nFacts():
     with pytest.warns(Warning):
-        dp_error = Denoising(nFacts = -11.5)
-    assert dp_error
-
-    # Teste Instantiation error handling (invalid q=T/N)
+        assert Denoising(nFacts = -11.5)
+        
+def test_denoising_param_q():
     with pytest.warns(Warning):
-        dp_error = Denoising(q = 0.15)
-    assert dp_error
+        assert Denoising(q = 0.15)
+        

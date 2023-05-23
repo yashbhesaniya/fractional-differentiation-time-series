@@ -17,16 +17,10 @@ class Denoising(BaseEstimator, TransformerMixin):
                  method: str = 'constant_residuals',
                  bWidth: float = 0.01,
                  ):
-        if (type(alpha) != float) | (alpha <= 0) | (alpha >= 1):
+        if (type(alpha) != float) | (alpha <= 0.0) | (alpha >= 1.0):
             raise ValueError('Denoising Class - Parameter alpha must be float, between 0 and 1')
 
-        #if (type(alpha) != float) | (alpha <= 0) | (alpha >= 1):  # Don't stops the execution
-        #    try: 
-        #        raise ValueError('Denoising Class - Parameter alpha must be float, between 0 and 1')
-        #    except ValueError:
-        #        print('Denoising Class - Parameter alpha must be float, between 0 and 1')
-
-        if (type(bWidth) != float) | (bWidth <= 0):
+        if (type(bWidth) != float) | (bWidth <= 0.0):
             raise ValueError('Denoising Class - Parameter bWidth must be float, positive')
         
         if (type(method) != str) | (method not in set(['constant_residuals', 'shrinkage'])):
