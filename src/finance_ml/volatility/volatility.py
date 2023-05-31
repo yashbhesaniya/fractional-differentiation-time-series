@@ -1,8 +1,16 @@
+"""
+Created on Fri May 12 19:00:00 2023
+
+@author: Luis Alvaro Correia
+"""
 # Import required packages
 import pandas as pd
 import numpy as np
 
 import math
+
+from ta.volatility import BollingerBands, AverageTrueRange, DonchianChannel, \
+                            KeltnerChannel, UlcerIndex
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn import set_config
@@ -11,8 +19,17 @@ set_config(transform_output="pandas")
 class Volatility(BaseEstimator, TransformerMixin):
     
     def __init__(self,
-                 data: pd.DataFrame(dtype=float),
-                 ticker: str = ""):
+                 ticker: str = '',
+                 atr_win: int = 14,
+                 bb_win: int = 20,
+                 bb_dev: int = 2,
+                 dc_win: int = 20,
+                 dc_off: int = 0,
+                 kc_win: int = 20,
+                 kc_win_atr: int = 10,
+                 kc_mult: int = 2,
+                 ui_win: int = 14,
+                 ):
         """
         Initialize data.
             
@@ -21,13 +38,50 @@ class Volatility(BaseEstimator, TransformerMixin):
                 All entries in function __init__.        
             data (pd.DataFrame): Columns of dataframe containing the variables 
                 to be scaled.
+            bb_win (int): n period
+            bb_dev (int): n factor standard deviation
 
         Returns:
             None
 
         """
-        self.__data = data
+        if (type(atr_win) != int) | (atr_win <= 0):
+            raise ValueError('Volatility Class - Parameter atr_win must be int, positive')
+
+        if (type(bb_win) != int) | (bb_win <= 0):
+            raise ValueError('Volatility Class - Parameter bb_win must be int, positive')
+
+        if (type(bb_dev) != int) | (bb_dev <= 0) | (bb_dev >= bb_win):
+            raise ValueError('Volatility Class - Parameter bb_dev must be int, positive, less than bb_win')
+
+        if (type(dc_win) != int) | (dc_win <= 0):
+            raise ValueError('Volatility Class - Parameter dc_win must be int, positive')
+
+        if (type(dc_off) != int) | (dc_off < 0) | (dc_off >= dc_win):
+            raise ValueError('Volatility Class - Parameter dc_off must be int, positive, less than dc_win')
+
+        if (type(kc_win) != int) | (kc_win <= 0):
+            raise ValueError('Volatility Class - Parameter kc_win must be int, positive')
+
+        if (type(kc_win_atr) != int) | (kc_win_atr <= 0) | (kc_win_atr >= kc_win):
+            raise ValueError('Volatility Class - Parameter kc_win_atr must be int, positive, less than kc_win')
+
+        if (type(kc_mult) != int) | (kc_mult <= 0):
+            raise ValueError('Volatility Class - Parameter kc_mult must be int, positive')
+
+        if (type(ui_win) != int) | (ui_win <= 0):
+            raise ValueError('Volatility Class - Parameter ui_win must be int, positive')
+
         self.__ticker = (ticker+'_' if ticker!='' else '')
+        self.__atr_win = atr_win
+        self.__bb_win = bb_win
+        self.__bb_dev = bb_dev
+        self.__dc_win = dc_win
+        self.__dc_off = dc_off
+        self.__kc_win = kc_win
+        self.__kc_win_atr = kc_win_atr
+        self.__kc_mult = kc_mult
+        self.__ui_win = ui_win
 
     @property
     def data(self):
@@ -139,8 +193,202 @@ class Volatility(BaseEstimator, TransformerMixin):
         sigma[sigma < 0] = 0
         return sigma
     
+    #------------------------ TECHNICAL INDICATORS -----------------------------
+    def cal_BollingerBands(self,
+               col_close: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates Bollinger Bands of "CLOSE" prices passed in "col_close", 
+            considering the windows "rol_win" and "win_dev" passed as arguments 
+            and creates new columns named "BB_"+rol_win+win_dev in the data-frame 
+            passed as argument. For compatibility purposes, it was added the 
+            ticker label in front of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_close (str): name of the column with the "CLOSE" data prices
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[col_close].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["close"]
+        
+        # Initialize Bollinger Bands Indicator
+        indicator_bb = BollingerBands(close=df_wrk["close"], window=self.__bb_win, window_dev=self.__bb_dev)
+        
+        # Add Bollinger Bands features
+        self.__data[self.__ticker+"BBM_"+str(self.__bb_win)] = indicator_bb.bollinger_mavg().values
+        self.__data[self.__ticker+"BBH_"+str(self.__bb_win)] = indicator_bb.bollinger_hband().values
+        self.__data[self.__ticker+"BBL_"+str(self.__bb_win)] = indicator_bb.bollinger_lband().values
+        
+        # Add Bollinger Band high indicator
+        self.__data[self.__ticker+"BBHI_"+str(self.__bb_win)] = indicator_bb.bollinger_hband_indicator().values
+        
+        # Add Bollinger Band low indicator
+        self.__data[self.__ticker+"BBLI_"+str(self.__bb_win)] = indicator_bb.bollinger_lband_indicator().values
+        
+        # Add Width Size Bollinger Bands
+        self.__data[self.__ticker+"BBW_"+str(self.__bb_win)] = indicator_bb.bollinger_wband().values
+        
+        # Add Percentage Bollinger Bands
+        self.__data[self.__ticker+"BBP_"+str(self.__bb_win)] = indicator_bb.bollinger_pband().values
+    
+    def cal_ATR(self,
+                col_high: str,
+                col_low: str,
+                col_close: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates Average True Range (ATR) to capture volatility of stocks windows 
+            "atr_win" passed as argument and creates new columns named "ATR_"+atr_win
+            in the data-frame also passed as argument. For compatibility purposes, 
+            it was added the ticker label in front of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_high (str): name of the column with the "HIGH" data prices
+            col_low (str): name of the column with the "LOW" data prices
+            col_close (str): name of the column with the "CLOSE" data prices
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_high,col_low,col_close]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low","close"]
+        indicator_atr = AverageTrueRange(high = df_wrk["high"], low = df_wrk["low"], 
+                                         close = df_wrk["close"], window = self.__atr_win)
+        
+        # Add ATR features
+        self.__data[self.__ticker+"ATR_"+str(self.__atr_win)] = indicator_atr.average_true_range().values  
+    
+    def cal_DonchianChannel(self,
+                col_high: str,
+                col_low: str,
+                col_close: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates Donchian Channel index to capture volatility of stocks windows 
+            "dc_win" passed as argument and creates new columns named "DC_"+dc_win
+            in the data-frame also passed as argument. For compatibility purposes, 
+            it was added the ticker label in front of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_high (str): name of the column with the "HIGH" data prices
+            col_low (str): name of the column with the "LOW" data prices
+            col_close (str): name of the column with the "CLOSE" data prices
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_high,col_low,col_close]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low","close"]
+        indicator_dc = DonchianChannel(high = df_wrk["high"], low = df_wrk["low"], 
+                                         close = df_wrk["close"], window = self.__dc_win)
+        
+        # Add Donchian Channel Bands features
+        self.__data[self.__ticker+"DCM_"+str(self.__dc_win)] = indicator_dc.donchian_channel_mband().values
+        self.__data[self.__ticker+"DCH_"+str(self.__dc_win)] = indicator_dc.donchian_channel_hband().values
+        self.__data[self.__ticker+"DCL_"+str(self.__dc_win)] = indicator_dc.donchian_channel_lband().values
+        
+        # Add Width Size of Donchian Channel Bands
+        self.__data[self.__ticker+"DCW_"+str(self.__dc_win)] = indicator_dc.donchian_channel_wband().values
+
+    def cal_KeltnerChannel(self,
+                col_high: str,
+                col_low: str,
+                col_close: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates Keltner Channel index to capture volatility of stocks windows 
+            "dc_win" passed as argument and creates new columns named "KC_"+kc_win
+            in the data-frame also passed as argument. For compatibility purposes, 
+            it was added the ticker label in front of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_high (str): name of the column with the "HIGH" data prices
+            col_low (str): name of the column with the "LOW" data prices
+            col_close (str): name of the column with the "CLOSE" data prices
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_high,col_low,col_close]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low","close"]
+        indicator_kc = KeltnerChannel(high = df_wrk["high"], low = df_wrk["low"], 
+                                         close = df_wrk["close"], window = self.__kc_win,
+                                         window_atr = self.__kc_win_atr, 
+                                         multiplier = self.__kc_mult)
+        
+        # Add Keltner Channel Bands features
+        self.__data[self.__ticker+"KCH_"+str(self.__kc_win)] = indicator_kc.keltner_channel_hband().values
+        self.__data[self.__ticker+"KCHI_"+str(self.__kc_win)] = indicator_kc.keltner_channel_hband_indicator().values
+        self.__data[self.__ticker+"KCL_"+str(self.__kc_win)] = indicator_kc.keltner_channel_lband().values
+        self.__data[self.__ticker+"KCLI_"+str(self.__kc_win)] = indicator_kc.keltner_channel_lband_indicator().values
+        self.__data[self.__ticker+"KCM_"+str(self.__kc_win)] = indicator_kc.keltner_channel_mband().values
+
+        # Add Keltner Channel Percentage Band
+        # self.__data[self.__ticker+"KCP_"+str(self.__kc_win)] = indicator_kc.keltner_channel_pband().values
+        
+        # Add Keltner Channel Band Width
+        self.__data[self.__ticker+"KCW_"+str(self.__kc_win)] = indicator_kc.keltner_channel_wband().values
+
+    def cal_UlcerIndex(self,
+               col_close: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates Ulcer Index of "CLOSE" prices passed in "col_close", 
+            considering the windows "ui_win" passed as argument and creates 
+            new columns named "UI_"+ui_win in the data-frame passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_close (str): name of the column with the "CLOSE" data prices
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[col_close].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["close"]
+        
+        # Initialize Bollinger Bands Indicator
+        indicator_ui = UlcerIndex(close=df_wrk["close"], window=self.__ui_win)
+        
+        # Add Ulcer Index indicator
+        self.__data[self.__ticker+"UI_"+str(self.__ui_win)] = indicator_ui.ulcer_index().values
+           
+    #------------------------------------------------------------------------------------
     # IMPLEMENTATION OF THE CORWIN-SCHULTZ Algorithm
-    def get_CorwinSchultz(self, 
+    def cal_CorwinSchultz(self, 
                       col_high: str,
                       col_low: str,
                       sl: int = 1):
@@ -172,7 +420,7 @@ class Volatility(BaseEstimator, TransformerMixin):
         spread.columns = ['Spread','Start_Time'] # 1st loc used to compute beta
         self.__data[self.__ticker+'CorwinSchultz'] = spread['Spread'].values
     
-    def get_GarmanKlass(self,
+    def cal_GarmanKlass(self,
                         col_open: str,
                         col_high: str,
                         col_low: str,
@@ -218,7 +466,7 @@ class Volatility(BaseEstimator, TransformerMixin):
         else:
             self.__data[self.__ticker+'GarmanKlass'] = result.values
         
-    def get_RogersSatchell(self, 
+    def cal_RogersSatchell(self, 
                            col_open: str,
                            col_high: str,
                            col_low: str,
@@ -265,7 +513,7 @@ class Volatility(BaseEstimator, TransformerMixin):
         else:
             self.__data[self.__ticker+'RogersSatchell'] = result.values
         
-    def get_YangZhang(self, 
+    def cal_YangZhang(self, 
                       col_open: str,
                       col_high: str,
                       col_low: str,
@@ -320,7 +568,7 @@ class Volatility(BaseEstimator, TransformerMixin):
         else:
             self.__data[self.__ticker+'YangZhang'] = result.values
         
-    def get_HodgesTompkins(self, 
+    def cal_HodgesTompkins(self, 
                            col_close: str,
                            window: int = 30, 
                            trading_periods: int = 252, 
@@ -376,14 +624,24 @@ class Volatility(BaseEstimator, TransformerMixin):
             None.
 
         """
+        # Calculate Technical Indicators
+        self.cal_BollingerBands (self.__ticker+"CLOSE")
+        self.cal_ATR (self.__ticker+"HIGHT", self.__ticker+"LOW", 
+                      self.__ticker+"CLOSE" )
+        self.cal_DonchianChannel (self.__ticker+"HIGHT", self.__ticker+"LOW", 
+                      self.__ticker+"CLOSE" )
+        self.cal_KeltnerChannel (self.__ticker+"HIGHT", self.__ticker+"LOW", 
+                      self.__ticker+"CLOSE" )
+        self.cal_UlcerIndex (self.__ticker+"CLOSE")
+        
         # Calculate Volatility Indicators
-        self.get_CorwinSchultz(self.__ticker+'HIGHT', self.__ticker+'LOW')
-        self.get_HodgesTompkins(self.__ticker+"CLOSE" )
-        self.get_YangZhang(self.__ticker+"OPEN", self.__ticker+"HIGHT", 
+        self.cal_CorwinSchultz(self.__ticker+'HIGHT', self.__ticker+'LOW')
+        self.cal_HodgesTompkins(self.__ticker+"CLOSE" )
+        self.cal_YangZhang(self.__ticker+"OPEN", self.__ticker+"HIGHT", 
                            self.__ticker+"LOW", self.__ticker+"CLOSE" )
-        self.get_RogersSatchell(self.__ticker+"OPEN", self.__ticker+"HIGHT", 
+        self.cal_RogersSatchell(self.__ticker+"OPEN", self.__ticker+"HIGHT", 
                                 self.__ticker+"LOW", self.__ticker+"CLOSE" )
-        self.get_GarmanKlass(self.__ticker+"OPEN", self.__ticker+"HIGHT", 
+        self.cal_GarmanKlass(self.__ticker+"OPEN", self.__ticker+"HIGHT", 
                              self.__ticker+"LOW", self.__ticker+"CLOSE" )
         
     def fit(self, 
@@ -404,11 +662,16 @@ class Volatility(BaseEstimator, TransformerMixin):
             self (objext)
 
         """
+        if isinstance(X, pd.Series):               
+            X = X.to_frame('0')                                    
+        
+        self.__data = X
+
         return self
         
     def transform(self, 
                   X: pd.DataFrame(dtype=float), 
-                  y = None                     ) -> pd.DataFrame(dtype=float):
+                  y = None ) -> pd.DataFrame(dtype=float):
         """
         Transforms the dataframe containing all variables of our financial series
             calculating the volatility indicators available.
@@ -424,10 +687,32 @@ class Volatility(BaseEstimator, TransformerMixin):
             X_tilda (pd.DataFrame): Original Dataframe with volatility indicators
 
         """
- 
-        if isinstance(X,pd.Series):               
-            X = X.to_frame('0')                                    
 
         self.calculate_volatilities()
+        
+        return self.__data
+    
+    def fit_transform(self, 
+                  X: pd.DataFrame(dtype=float), 
+                  y = None  ) -> pd.DataFrame(dtype=float):
+        """
+        Fit and Transforms the dataframe containing all variables of our financial series
+            calculating the volatility indicators available.
+            (This routine is intented to maintaing sklearn Pipeline compatibility)
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+    
+            X (pd.DataFrame): Columns of dataframe containing the variables to be
+                used to calculate the covariance matrix.
+
+        Returns:
+            self (object)
+
+        """
+
+        self.fit(X)
+        self.transform(X)
         
         return self.__data

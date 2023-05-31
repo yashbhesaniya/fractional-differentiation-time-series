@@ -1,13 +1,20 @@
+"""
+Created on Mon May 8 19:00:00 2023
+
+@Group: 
+    Theorectical approach by Franci Daniele Prochnow Gaensly and Frederico Alexandre
+    Coded by Luis Alvaro Correia
+"""
+
 # Import required packages
 import pandas as pd
 import numpy as np
 
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.neighbors import KernelDensity
 
 from scipy.optimize import minimize
 
-class Denoising(BaseEstimator, TransformerMixin):
+class Denoising():
     
     def __init__(self,
                  alpha: float = 0.5,
@@ -44,13 +51,13 @@ class Denoising(BaseEstimator, TransformerMixin):
                                 #   (default='constant_residuals')
         self.__bWidth = bWidth  # bWidth (float): The bandwidth of the kernel (default=.01)
             
-    def mpPDF(self,
+    def calc_PDF(self,
               var: float  ) -> pd.Series(dtype = float):
         """
         Adapted from Chap. 2 of  "Machine Learning for Asset Managers", by
         - Marcos M. Lopez de Prado - 1st. edition
         
-        Creates a Marchenko-Pastur Probability Density Function
+        Calculates a Marchenko-Pastur Probability Density Function
         Args:
             var (float): Variance
         Returns:
@@ -68,7 +75,7 @@ class Denoising(BaseEstimator, TransformerMixin):
         pdf = pd.Series(pdf, index=eVal)
         return pdf
     
-    def fitKDE(self, 
+    def fit_KDE(self, 
                obs: np.array, 
                kernel: str = 'gaussian', 
                x: np.array = None             ) -> pd.Series(dtype = float):
@@ -99,13 +106,13 @@ class Denoising(BaseEstimator, TransformerMixin):
         return pdf
 
     @staticmethod
-    def getPCA( matrix: np.array) -> (np.ndarray([]),
+    def calc_PCA( matrix: np.array) -> (np.ndarray([]),
                                       np.ndarray([])):
         """
         Adapted from Chap. 2 of  "Machine Learning for Asset Managers", by
         - Marcos M. Lopez de Prado - 1st. edition
         
-        Utility method that gets the Eigenvalues and Eigenvector values from 
+        Utility method that calculates the Eigenvalues and Eigenvector values from 
             a Hermitian Matrix
         Args:
             matrix pd.DataFrame: Correlation matrix
@@ -123,7 +130,7 @@ class Denoising(BaseEstimator, TransformerMixin):
         return eVal, eVec
 
     @staticmethod
-    def cov2corr(cov: np.ndarray) -> np.ndarray([]):
+    def cov_to_corr(cov: np.ndarray) -> np.ndarray([]):
         """
         Adapted from Chap. 2 of  "Machine Learning for Asset Managers", by
         - Marcos M. Lopez de Prado - 1st. edition
@@ -142,7 +149,7 @@ class Denoising(BaseEstimator, TransformerMixin):
         return corr
 
     @staticmethod
-    def corr2cov(  corr: np.ndarray,
+    def corr_to_cov(  corr: np.ndarray,
                    std     ) -> np.ndarray([]): 
         """
         Adapted from Chap. 2 of  "Machine Learning for Asset Managers", by
@@ -159,7 +166,95 @@ class Denoising(BaseEstimator, TransformerMixin):
         cov=corr*np.outer(std,std) 
         return cov
 
-    def errPDFs(self, 
+    @property
+    def get_corr_original (self) -> np.ndarray([]): 
+        """
+        Args:
+            self (object)
+    
+        Returns:
+            np.ndarray: original correlation matrix 
+        """
+        return self.__corr0
+    
+    @property
+    def get_cov_original (self) -> np.ndarray([]): 
+        """
+        Args:
+            self (object)
+    
+        Returns:
+            np.ndarray: original covariance matrix 
+        """
+        return self.__cov0
+    
+    @property
+    def get_eval_original (self) -> np.ndarray([]): 
+        """
+        Args:
+            self (object)
+    
+        Returns:
+            np.ndarray: eigenvalues from the original covariance matrix 
+        """
+        return self.__eVal0
+
+    @property
+    def get_evec_original (self) -> np.ndarray([]): 
+        """
+        Args:
+            self (object)
+    
+        Returns:
+            np.ndarray: eigenvectors from the original covariance matrix 
+        """
+        return self.__eVec0
+
+    @property
+    def get_corr_denoised (self) -> np.ndarray([]): 
+        """
+        Args:
+            self (object)
+    
+        Returns:
+            np.ndarray: denoised correlation matrix 
+        """
+        return self.__corr1
+    
+    @property
+    def get_cov_denoised (self) -> np.ndarray([]): 
+        """
+        Args:
+            self (object)
+    
+        Returns:
+            np.ndarray: denoised covariance matrix 
+        """
+        return self.__cov1
+    
+    @property
+    def get_eval_denoised (self) -> np.ndarray([]): 
+        """
+        Args:
+            self (object)
+    
+        Returns:
+            np.ndarray: eigenvalues from the denoised covariance matrix 
+        """
+        return self.__eVal1
+
+    @property
+    def get_evec_denoised (self) -> np.ndarray([]): 
+        """
+        Args:
+            self (object)
+    
+        Returns:
+            np.ndarray: eigenvectors from the denoised covariance matrix 
+        """
+        return self.__eVec1
+
+    def err_PDFs(self, 
                 var: float, 
                 eVal: np.ndarray  ) -> float:
         """
@@ -175,12 +270,12 @@ class Denoising(BaseEstimator, TransformerMixin):
             float: sum squared error
         """
         # Fit error
-        pdf0 = self.mpPDF(var)  # theoretical pdf
-        pdf1 = self.fitKDE(eVal, x = pdf0.index.values)  # empirical pdf
+        pdf0 = self.calc_PDF(var)  # theoretical pdf
+        pdf1 = self.fit_KDE(eVal, x = pdf0.index.values)  # empirical pdf
         sse = np.sum((pdf1 - pdf0) ** 2)
         return sse
     
-    def findMaxEval(self, 
+    def find_max_eval(self, 
                     eVal: np.ndarray  ) -> (float, float):
         """
         Adapted from Chap. 2 of  "Machine Learning for Asset Managers", by
@@ -198,8 +293,8 @@ class Denoising(BaseEstimator, TransformerMixin):
                     signal-to-noise
         """
     
-        out = minimize(lambda *x: self.errPDFs(*x), .5, args=(eVal),   
-                       bounds=((1E-5, 1 - 1E-5),))
+        out = minimize(lambda *x: self.err_PDFs(*x), .5, args = (eVal),   
+                       bounds = ((1E-5, 1 - 1E-5),))
         if out['success']:
             var = out['x'][0]
         else:
@@ -207,7 +302,7 @@ class Denoising(BaseEstimator, TransformerMixin):
         eMax = var * (1 + (1. / self.__q) ** .5) ** 2
         return eMax, var
     
-    def denoisedCorr(self, 
+    def denoised_corr(self, 
                      eVal: np.ndarray,
                      eVec: np.ndarray,
                      nFacts: int ) -> np.ndarray([]):   
@@ -230,10 +325,10 @@ class Denoising(BaseEstimator, TransformerMixin):
         eVal_[nFacts:] = eVal_[nFacts:].sum() / float(eVal_.shape[0] - nFacts)  
         eVal_ = np.diag(eVal_)
         corr1 = np.dot(eVec, eVal_).dot(eVec.T) 
-        corr1 = self.cov2corr(corr1)
+        corr1 = self.cov_to_corr(corr1)
         return corr1
  
-    def denoisedCorr2(self, 
+    def denoised_corr_shrinkage(self, 
                        eVal: np.ndarray,
                        eVec: np.ndarray,
                        nFacts: int ) -> np.ndarray([]):  
@@ -255,7 +350,7 @@ class Denoising(BaseEstimator, TransformerMixin):
         eValR,eVecR = eVal[nFacts:,nFacts:],eVec[:,nFacts:]    
         corr0 = np.dot(eVecL,eValL).dot(eVecL.T) 
         corr1 = np.dot(eVecR,eValR).dot(eVecR.T) 
-        corr2 = corr0+self.__alpha*corr1+(1-self.__alpha)*np.diag(np.diag(corr1)) 
+        corr2 = corr0 + self.__alpha * corr1 + (1 - self.__alpha) * np.diag(np.diag(corr1)) 
         return corr2
    
     def fit(self, 
@@ -263,7 +358,9 @@ class Denoising(BaseEstimator, TransformerMixin):
             y = None):
                
         """
-        Method defined for compatibility purposes.
+        Uses the dataframe containing all variables of our financial series
+            to calculate its covariance matrix. The results are passed through
+            'self' object and are acesses using getter methods of Denoising class.
             
         Args:
             self: object
@@ -273,67 +370,57 @@ class Denoising(BaseEstimator, TransformerMixin):
                 used to calculate covariance matrix.
 
         Returns:
-            self (objext)
+            self (object)
 
         """
+        self.__cov0 = np.cov(X, rowvar = 0)
+        
+        # Converting Covariancce to Correlation
+        self.__corr0 = self.cov_to_corr(self.__cov0)
+        # Getting Eigenvalues and Eigenvectors
+        self.__eVal0, self.__eVec0 = self.calc_PCA(self.__corr0)
+        
+        # Getting Max Eigenvalues and calculating variance attributed to noise
+        eMax0, var0 = self.find_max_eval(np.diag(self.__eVal0))
+        self.__nFacts0 = self.__eVal0.shape[0] - np.diag(self.__eVal0)[::-1].searchsorted(eMax0)
+
         return self
         
     def transform(self, 
                   X: pd.DataFrame(dtype=float), 
-                  y = None                     ) -> (np.ndarray([]),
-                                                     np.ndarray([]),
-                                                     np.ndarray([]),
-                                                     np.ndarray([])):
+                  y = None                     ):
         """
-        Transforms the dataframe containing all variables of our financial series
-            calculating the covariance matrix and processing the denoise and detoning.
+        Transforms covariance matrix calculated by the 'fit' process and performs
+            the denoise and detoning of correlation matrix.
             
         Args:
             self: object
                 All entries in function __init__.        
     
             X (pd.DataFrame): Columns of dataframe containing the variables to be
-                used to calculate the covariance matrix.
+                used to calculate the covariance matrix. The results are passed through
+                'self' object and are acesses using getter methods of Denoising class.
 
         Returns:
-            (tuple): tuple containing:
-                Cov1 (np.ndarray): Denoised covariance matrix.
-                Corr1 (np.ndarray): Denoised correlation matrix.
-                eVal1 (np.ndarray): Eigenvalues of Correlation Matrix
-                eVec1 (np.ndarray): Eigenvectors of Correlation Matrix
+            self (object)
 
         """
- 
-        cov = np.cov(X,rowvar=0)
-        
-        # Converting Covariancce to Correlation
-        corr0 = self.cov2corr(cov)
-        # Getting Eigenvalues and Eigenvectors
-        eVal0, eVec0 = self.getPCA(corr0)
-        
-        # Getting Max Eigenvalues and calculating variance attributed to noise
-        eMax0, var0 = self.findMaxEval(np.diag(eVal0))
-        nFacts0 = eVal0.shape[0] - np.diag(eVal0)[::-1].searchsorted(eMax0)
-        
         #----- Denoising The Corr Matrix - Residual Eigenvalue
         if self.__method == 'constant_residuals':
-            corr1 = self.denoisedCorr(eVal0, eVec0, nFacts0)
-            eVal1,eVec1 = self.getPCA(corr1)
+            self.__corr1 = self.denoised_corr(self.__eVal0, self.__eVec0, self.__nFacts0)
+            self.__eVal1, self.__eVec1 = self.calc_PCA(self.__corr1)
         else:
         #----- Denoising The Corr Matrix - Targeting Shrinkage
-            corr1 = self.denoisedCorr2(eVal0, eVec0, nFacts0) 
-            eVal1,eVec1 = self.getPCA(corr1)
+            self.__corr1 = self.denoised_corr_shrinkage(self.__eVal0, self.__eVec0, self.__nFacts0) 
+            self.__eVal1, self.__eVec1 = self.calc_PCA(self.__corr1)
 
-        cov1 = self.corr2cov(corr1, np.diag(cov)**.5)
+        self.__cov1 = self.corr_to_cov(self.__corr1, np.diag(self.__cov0)**.5)
             
-        return cov1, corr1, eVal1, eVec1
+        return self
     
     def fit_transform(self, 
                   X: pd.DataFrame(dtype=float), 
-                  y = None                     ) -> (np.ndarray([]),
-                                                     np.ndarray([]),
-                                                     np.ndarray([]),
-                                                     np.ndarray([])):
+                  y = None                     ):
         """
         Fit and Transforms the dataframe containing all variables of our financial series
             calculating the covariance matrix and processing the denoise and detoning.
@@ -347,13 +434,13 @@ class Denoising(BaseEstimator, TransformerMixin):
                 used to calculate the covariance matrix.
 
         Returns:
-            None
+            self (object)
 
         """
 
         self.fit(X)
-        cov1, corr1, eVal1, eVec1 = self.transform(X)
+        self.transform(X)
         
-        return cov1, corr1, eVal1, eVec1
+        return self
         
     
