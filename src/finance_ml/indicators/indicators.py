@@ -10,7 +10,11 @@ import numpy as np
 import math
 
 from ta.momentum import KAMAIndicator, PercentagePriceOscillator, PercentageVolumeOscillator, \
-            ROCIndicator, RSIIndicator, StochRSIIndicator, StochasticOscillator
+                ROCIndicator, RSIIndicator, StochRSIIndicator, StochasticOscillator, \
+                AwesomeOscillatorIndicator, TSIIndicator, UltimateOscillator, WilliamsRIndicator
+from ta.volume import AccDistIndexIndicator
+
+
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -20,7 +24,6 @@ set_config(transform_output="pandas")
 class Indicators(BaseEstimator, TransformerMixin):
     
     def __init__(self,
-#                 data: pd.DataFrame(dtype=float),
                  ticker: str = '',
                  norm_data: bool = False,
                  scale_method: str = "minmax",
@@ -42,6 +45,17 @@ class Indicators(BaseEstimator, TransformerMixin):
                  StRSI_sm2: int = 3,
                  SO_win: int = 14,
                  SO_sm: int = 3,
+                 AOI_win1: int = 5,
+                 AOI_win2: int = 34,
+                 TSI_win_slow: int = 25,
+                 TSI_win_fast: int = 13,
+                 UO_win1: int = 7,
+                 UO_win2: int = 14,
+                 UO_win3: int = 28,
+                 UO_weight1: float = 4.0,
+                 UO_weight2: float = 2.0,
+                 UO_weight3: float = 1.0,
+                 WRI_lbp: int = 14,
                  ):
         
         """
@@ -78,7 +92,17 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__StRSI_sm2 = StRSI_sm2    
         self.__SO_win = SO_win
         self.__SO_sm = SO_sm
-
+        self.__AOI_win1 = AOI_win1
+        self.__AOI_win2 = AOI_win2
+        self.__TSI_win_slow = TSI_win_slow
+        self.__TSI_win_fast = TSI_win_fast
+        self.__UO_win1 = UO_win1
+        self.__UO_win2 = UO_win2
+        self.__UO_win3 = UO_win3
+        self.__UO_weight1 = UO_weight1
+        self.__UO_weight2 = UO_weight2
+        self.__UO_weight3 = UO_weight3
+        self.__WRI_lbp = WRI_lbp
             
     @property
     def data(self):
@@ -432,6 +456,10 @@ class Indicators(BaseEstimator, TransformerMixin):
 
         self.__data[self.__ticker+"PVO_"+str(self.__PVO_win_slow)+"_"+str(self.__PVO_win_fast)] = \
                 indicator_PVO.pvo().values
+        self.__data[self.__ticker+"PVOH_"+str(self.__PVO_win_slow)+"_"+str(self.__PVO_win_fast)] = \
+                indicator_PVO.pvo_hist().values
+        self.__data[self.__ticker+"PVOsgn_"+str(self.__PVO_win_slow)+"_"+str(self.__PVO_win_fast)] = \
+                indicator_PVO.pvo_signal().values
     
     def __cal_ROC(self,
                col_close: str ) -> None:
@@ -566,7 +594,7 @@ class Indicators(BaseEstimator, TransformerMixin):
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close"]
         
-        # Initialize Bollinger Bands Indicator
+        # Initialize Stochastic Indicator
         indicator_SO = StochasticOscillator(high = df_wrk["high"], low = df_wrk["low"], 
                                             close=df_wrk["close"], window = self.__SO_win,
                                             smooth_window = self.__SO_sm)
@@ -574,6 +602,206 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__data[self.__ticker+"SO_"+str(self.__SO_win)] = indicator_SO.stoch().values
         self.__data[self.__ticker+"SOsgn_"+str(self.__SO_win)] = indicator_SO.stoch_signal().values    
      
+    def __cal_AOI(self,
+                 col_high: str,
+                 col_low: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates The Awesome Oscillator is an indicator used to measure market momentum. 
+            AO calculates the difference of a 34 Period and 5 Period Simple Moving Averages. 
+            It is calculated over "col_high" and "col_low", passed as parameter, 
+            besides "AOI_win1" and "AOI_win2" creating new columns named 
+            "AOI_"+AOI_win1+AOI_win2 in the data-frame passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_high (str): name of the column with the "HIGH" data prices
+            col_low (str): name of the column with the "LOW" data prices
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_high,col_low]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low"]
+        
+        # Initialize Awesome Oscillator Indicator
+        indicator_AOI = AwesomeOscillatorIndicator(high = df_wrk["high"], low = df_wrk["low"], 
+                                                   window1 = self.__AOI_win1, window2 = self.__AOI_win2)
+
+        self.__data[self.__ticker+"AOI_"+str(self.__AOI_win1)+"_"+str(self.__AOI_win2)] = \
+                    indicator_AOI.awesome_oscillator().values   
+     
+    def __cal_TSI(self,
+               col_close: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates True strength index (TSI) which shows both trend direction 
+            and overbought/oversold conditions over "CLOSE" prices passed in "col_close",
+            "win_fast" and "win_slow", creating new columns named 
+            "TSI"+win_slow+"_"+win_fast in the data-frame passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_close (str): name of the column with the "CLOSE" data prices
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[col_close].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["close"]
+        
+        # Initialize Percentage Price Oscilator Indicator
+        indicator_TSI = TSIIndicator(close=df_wrk["close"], window_slow = self.__TSI_win_slow, 
+                                       window_fast = self.__TSI_win_fast )
+
+        self.__data[self.__ticker+"TSI_"+str(self.__TSI_win_slow)+"_"+str(self.__TSI_win_fast)] = \
+                indicator_TSI.tsi().values
+
+    def __cal_UO(self,
+                 col_high: str,
+                 col_low: str,
+                 col_close: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates Ultimate Oscillator created by Larry Williams’ (1976) signal, 
+            a momentum oscillator designed to capture momentum across three different 
+            timeframes. It is calculated over "col_high" and "col_low" and "col_close", 
+            passed as parameter besides 03 pairs of (window, weight) parameters creating 
+            new columns named "UO"+str(window, weight) in the data-frame passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_high (str): name of the column with the "HIGH" data prices
+            col_low (str): name of the column with the "LOW" data prices
+            col_close (str): name of the column with the "CLOSE" data prices
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_high,col_low,col_close]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low","close"]
+        
+        # Initialize Ultimate Oscillator
+        indicator_UO = UltimateOscillator(high = df_wrk["high"], low = df_wrk["low"], 
+                                          close=df_wrk["close"], window1 = self.__UO_win1,
+                                          window2 = self.__UO_win2, window3 = self.__UO_win3,
+                                          weight1 = self.__UO_weight1, weight2 = self.__UO_weight2, 
+                                          weight3 = self.__UO_weight3 )
+        field_nm = "UO_"+f'{self.__UO_win1:02d}_{self.__UO_win2:02d}_{self.__UO_win3:02d}'
+        self.__data[self.__ticker+field_nm] = indicator_UO.ultimate_oscillator().values   
+        
+    def __cal_WRI(self,
+                 col_high: str,
+                 col_low: str,
+                 col_close: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates William %R Indicator, developed by Larry Williams, Williams %R is 
+            a momentum indicator that is the inverse of the Fast Stochastic Oscillator. 
+            Also referred to as %R, Williams %R reflects the level of the close relative
+            to the highest high for the look-back period. In contrast, the Stochastic
+            Oscillator reflects the level of the close relative to the lowest low. 
+            %R corrects for the inversion by multiplying the raw value by -100. 
+            As a result, the Fast Stochastic Oscillator and Williams %R produce the
+            exact same lines, only the scaling is different. Williams %R oscillates 
+            from 0 to -100. Readings from 0 to -20 are considered overbought. 
+            Readings from -80 to -100 are considered oversold. Unsurprisingly, 
+            signals derived from the Stochastic Oscillator are also applicable 
+            to Williams %R.
+
+        	%R = (Highest High - Close)/(Highest High - Lowest Low) * -100
+
+            Lowest Low = lowest low for the look-back period Highest High = highest 
+            high for the look-back period %R is multiplied by -100 correct the 
+            inversion and move the decimal. It is calculated over "col_high" 
+            and "col_low" and "col_close", passed as parameter and the "lbp" which 
+            represents the looking back period and creates a new columns named 
+            "WRI"+str(lbp) in the data-frame passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_high (str): name of the column with the "HIGH" data prices
+            col_low (str): name of the column with the "LOW" data prices
+            col_close (str): name of the column with the "CLOSE" data prices
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_high,col_low,col_close]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low","close"]
+        
+        # Initialize Bollinger Bands Indicator
+        indicator_WRI = WilliamsRIndicator(high = df_wrk["high"], low = df_wrk["low"], 
+                                          close=df_wrk["close"], lbp = self.__WRI_lbp )
+        self.__data[self.__ticker+"WRI_"+str(self.__WRI_lbp)] = indicator_WRI.williams_r().values   
+
+    #####------ VOLUME Indicators -------
+    def __cal_ADI(self,
+                 col_high: str,
+                 col_low: str,
+                 col_close: str, 
+                 col_volume: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates the Accumulation/Distribution Index (ADI) which acts as leading 
+            indicator of price movements. It is calculated over "col_high" 
+            and "col_low", "col_close" and "col_volume" passed as parameter and 
+            creates a new columns named "ADI" in the data-frame passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_high (str): name of the column with the "HIGH" data prices
+            col_low (str): name of the column with the "LOW" data prices
+            col_close (str): name of the column with the "CLOSE" data prices
+            col_volume (str): name of the column with the "VOLUME" data
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_high,col_low,col_close, col_volume]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low","close", "volume"]
+        
+        # Initialize Bollinger Bands Indicator
+        indicator_ADI = AccDistIndexIndicator(high = df_wrk["high"], low = df_wrk["low"], 
+                                          close=df_wrk["close"], volume = df_wrk["volume"], )
+        self.__data[self.__ticker+"ADI"] = indicator_ADI.acc_dist_index().values   
+     
+        
     #------------------------------------------------------------------------------------
     def calculate_indicators (self):
         """
@@ -608,6 +836,15 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__cal_StochRSI(self.__ticker+"CLOSE")
         self.__cal_SO(self.__ticker+"HIGHT", self.__ticker+"LOW", 
                       self.__ticker+"CLOSE" )
+        self.__cal_AOI(self.__ticker+"HIGHT", self.__ticker+"LOW")
+        self.__cal_TSI(self.__ticker+"CLOSE")
+        self.__cal_UO(self.__ticker+"HIGHT", self.__ticker+"LOW", 
+                      self.__ticker+"CLOSE" )
+        self.__cal_WRI(self.__ticker+"HIGHT", self.__ticker+"LOW", 
+                      self.__ticker+"CLOSE" )
+        self.__cal_ADI(self.__ticker+"HIGHT", self.__ticker+"LOW", 
+                      self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
+
 
     def normalize_data(self):
         """
