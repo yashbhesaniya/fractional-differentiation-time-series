@@ -12,8 +12,9 @@ import math
 from ta.momentum import KAMAIndicator, PercentagePriceOscillator, PercentageVolumeOscillator, \
                 ROCIndicator, RSIIndicator, StochRSIIndicator, StochasticOscillator, \
                 AwesomeOscillatorIndicator, TSIIndicator, UltimateOscillator, WilliamsRIndicator
-from ta.volume import AccDistIndexIndicator
-
+from ta.volume import AccDistIndexIndicator, ChaikinMoneyFlowIndicator, EaseOfMovementIndicator, \
+                ForceIndexIndicator, MFIIndicator, NegativeVolumeIndexIndicator, \
+                OnBalanceVolumeIndicator, VolumePriceTrendIndicator, VolumeWeightedAveragePrice
 
 
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -56,6 +57,11 @@ class Indicators(BaseEstimator, TransformerMixin):
                  UO_weight2: float = 2.0,
                  UO_weight3: float = 1.0,
                  WRI_lbp: int = 14,
+                 CMF_win: int = 20,
+                 EOM_win: int = 14,
+                 FI_win: int = 13,
+                 MFI_win: int = 14,
+                 VWAP_win: int = 14,
                  ):
         
         """
@@ -103,6 +109,11 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__UO_weight2 = UO_weight2
         self.__UO_weight3 = UO_weight3
         self.__WRI_lbp = WRI_lbp
+        self.__CMF_win = CMF_win
+        self.__EOM_win = EOM_win
+        self.__FI_win = FI_win
+        self.__MFI_win = MFI_win
+        self.__VWAP_win = VWAP_win
             
     @property
     def data(self):
@@ -356,7 +367,10 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__data[self.__ticker+"V_MA_"+str(rol_win2)] = df_wrk["volume"].rolling(rol_win2, min_periods=1).mean().values
         self.__data[self.__ticker+"V_MA_"+str(rol_win3)] = df_wrk["volume"].rolling(rol_win3, min_periods=1).mean().values
         
-    #---------------------------- TECHNICAL INDICATORS ----------------------------------
+    #================================ TECHNICAL INDICATORS ====================================
+    #
+    # -------------------------------- Momentum Indicators ------------------------------------
+    #
     def __cal_KAMA(self,
                col_close: str ) -> None:
         """
@@ -763,7 +777,9 @@ class Indicators(BaseEstimator, TransformerMixin):
                                           close=df_wrk["close"], lbp = self.__WRI_lbp )
         self.__data[self.__ticker+"WRI_"+str(self.__WRI_lbp)] = indicator_WRI.williams_r().values   
 
-    #####------ VOLUME Indicators -------
+    #
+    # -------------------------------- Volume Indicators ------------------------------------
+    #
     def __cal_ADI(self,
                  col_high: str,
                  col_low: str,
@@ -796,13 +812,318 @@ class Indicators(BaseEstimator, TransformerMixin):
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close", "volume"]
         
-        # Initialize Bollinger Bands Indicator
+        # Initialize Accumulation/Distribution Index Indicator
         indicator_ADI = AccDistIndexIndicator(high = df_wrk["high"], low = df_wrk["low"], 
-                                          close=df_wrk["close"], volume = df_wrk["volume"], )
+                                          close=df_wrk["close"], volume = df_wrk["volume"] )
         self.__data[self.__ticker+"ADI"] = indicator_ADI.acc_dist_index().values   
      
+    def __cal_CMF(self,
+                 col_high: str,
+                 col_low: str,
+                 col_close: str, 
+                 col_volume: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
         
-    #------------------------------------------------------------------------------------
+        Calculates the Chaikin Money Flow (CMF) which measures the amount of Money 
+            Flow Volume over a specific period. It is calculated over "col_high" 
+            and "col_low", "col_close" and "col_volume" passed as parameter and 
+            creates a new columns named "CMF" in the data-frame passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_high (str): name of the column with the "HIGH" data prices
+            col_low (str): name of the column with the "LOW" data prices
+            col_close (str): name of the column with the "CLOSE" data prices
+            col_volume (str): name of the column with the "VOLUME" data
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_high,col_low,col_close, col_volume]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low","close", "volume"]
+        
+        # Initialize Chaikin Money Flow Indicator
+        indicator_CMF = ChaikinMoneyFlowIndicator(high = df_wrk["high"], low = df_wrk["low"], 
+                                          close=df_wrk["close"], volume = df_wrk["volume"],
+                                          window = self.__CMF_win)
+        self.__data[self.__ticker+"CMF_"+str(self.__CMF_win)] = indicator_CMF.chaikin_money_flow().values   
+     
+    def __cal_EOM(self,
+                 col_high: str,
+                 col_low: str,
+                 col_volume: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates the Ease of movement (EoM, EMV) which relate an asset’s price 
+            change to its volume and is particularly useful for assessing the 
+            strength of a trend. It is calculated over "col_high" and "col_low" 
+            and "col_volume" passed as parameter and creates new columns named 
+            "EOM" and "EMV" in the data-frame passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_high (str): name of the column with the "HIGH" data prices
+            col_low (str): name of the column with the "LOW" data prices
+            col_volume (str): name of the column with the "VOLUME" data
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_high,col_low,col_volume]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low","volume"]
+        
+        # Initialize Ease of Movement Indicator
+        indicator_EOM = EaseOfMovementIndicator(high = df_wrk["high"], low = df_wrk["low"], 
+                                          volume = df_wrk["volume"], window = self.__EOM_win)
+        self.__data[self.__ticker+"EOM_"+str(self.__EOM_win)] = indicator_EOM.ease_of_movement().values   
+        self.__data[self.__ticker+"EMV_"+str(self.__EOM_win)] = indicator_EOM.sma_ease_of_movement().values   
+     
+    def __cal_FI(self,
+               col_close: str,
+               col_volume: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates Force Index (FI) which illustrates how strong the actual buying 
+            or selling pressure is. High positive values mean there is a strong 
+            rising trend, and low values signify a strong downward trend. 
+            It is calculated over "CLOSE" prices "VOLUME" passed in "col_close" 
+            and "col_volume", respectively, besides "FI_win" which is the period
+            desired. The function creates a new columns named "FI_"+FI_window
+            in the data-frame passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_close (str): name of the column with the "CLOSE" data prices
+            col_volume (str): name of the column with the "VOLUME" data
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_close, col_volume]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["close","volume"]
+        
+        # Initialize Force Index Indicator
+        indicator_FI = ForceIndexIndicator(close=df_wrk["close"], 
+                                           volume = df_wrk["volume"], 
+                                           window = self.__FI_win )
+
+        self.__data[self.__ticker+"FI_"+str(self.__FI_win)] = indicator_FI.force_index().values
+
+    def __cal_MFI(self,
+                 col_high: str,
+                 col_low: str,
+                 col_close: str, 
+                 col_volume: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates the Money Flow Index (MFI) which uses both price and volume 
+            to measure buying and selling pressure. It is positive when the 
+            typical price rises (buying pressure) and negative when the typical 
+            price declines (selling pressure). A ratio of positive and negative 
+            money flow is then plugged into an RSI formula to create an oscillator 
+            that moves between zero and one hundred. It is calculated over "col_high" 
+            and "col_low", "col_close" and "col_volume" passed as parameter and 
+            creates a new columns named "MFI_"+MFI_window in the data-frame 
+            passed as argument.
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_high (str): name of the column with the "HIGH" data prices
+            col_low (str): name of the column with the "LOW" data prices
+            col_close (str): name of the column with the "CLOSE" data prices
+            col_volume (str): name of the column with the "VOLUME" data
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_high,col_low,col_close, col_volume]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low","close", "volume"]
+        
+        # Initialize Money Flow Index Indicator
+        indicator_MFI = MFIIndicator(high = df_wrk["high"], low = df_wrk["low"], 
+                                          close=df_wrk["close"], volume = df_wrk["volume"],
+                                          window = self.__MFI_win)
+        self.__data[self.__ticker+"MFI_"+str(self.__MFI_win)] = indicator_MFI.money_flow_index().values   
+     
+    def __cal_NVI(self,
+               col_close: str,
+               col_volume: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates the Negative Volume Index (NVI) is a cumulative indicator 
+            that uses the change in volume to decide when the smart money is active. 
+            The function creates a new columns named "NVI" in the data-frame 
+            passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_close (str): name of the column with the "CLOSE" data prices
+            col_volume (str): name of the column with the "VOLUME" data
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_close, col_volume]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["close","volume"]
+        
+        # Initialize Negative Volume Index Indicator
+        indicator_NVI = NegativeVolumeIndexIndicator(close=df_wrk["close"], 
+                                           volume = df_wrk["volume"] )
+
+        self.__data[self.__ticker+"NVI"] = indicator_NVI.negative_volume_index().values
+        
+    def __cal_OBV(self,
+               col_close: str,
+               col_volume: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates the On-balance volume (OBV) which relates price and volume in 
+            the stock market. OBV is based on a cumulative total volume. 
+            The function creates a new columns named "OBV" in the data-frame 
+            passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_close (str): name of the column with the "CLOSE" data prices
+            col_volume (str): name of the column with the "VOLUME" data
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_close, col_volume]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["close","volume"]
+        
+        # Initialize On-balance volume Indicator
+        indicator_OBV = OnBalanceVolumeIndicator(close=df_wrk["close"], 
+                                                 volume = df_wrk["volume"] )
+
+        self.__data[self.__ticker+"OBV"] = indicator_OBV.on_balance_volume().values
+        
+    def __cal_VPT(self,
+               col_close: str,
+               col_volume: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates the Volume-price trend (VPT) which is based on a running 
+            cumulative volume that adds or substracts a multiple of the percentage 
+            change in share price trend and current volume, depending upon the 
+            investment’s upward or downward movements. The function creates a 
+            new columns named "VPT" in the data-frame passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_close (str): name of the column with the "CLOSE" data prices
+            col_volume (str): name of the column with the "VOLUME" data
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_close, col_volume]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["close","volume"]
+        
+        # Initialize Volume-price trend Indicator
+        indicator_VPT = VolumePriceTrendIndicator(close=df_wrk["close"], 
+                                                 volume = df_wrk["volume"] )
+
+        self.__data[self.__ticker+"VPT"] = indicator_VPT.volume_price_trend().values
+        
+    def __cal_VWAP(self,
+                 col_high: str,
+                 col_low: str,
+                 col_close: str, 
+                 col_volume: str ) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates the Volume Weighted Average Price (VWAP) which is equals the 
+            dollar value of all trading periods divided by the total trading volume 
+            for the current day. The calculation starts when trading opens and 
+            ends when it closes. Because it is good for the current trading day 
+            only, intraday periods and data are used in the calculation. It is 
+            calculated over "col_high", "col_low", "col_close" and "col_volume" 
+            passed as parameter and creates a new columns named "VWAP" in the 
+            data-frame passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_high (str): name of the column with the "HIGH" data prices
+            col_low (str): name of the column with the "LOW" data prices
+            col_close (str): name of the column with the "CLOSE" data prices
+            col_volume (str): name of the column with the "VOLUME" data
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[col_high,col_low,col_close, col_volume]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low","close", "volume"]
+        
+        # Initialize Volume Weighted Average Price Indicator
+        indicator_VWAP = VolumeWeightedAveragePrice(high = df_wrk["high"], low = df_wrk["low"], 
+                                          close=df_wrk["close"], volume = df_wrk["volume"],
+                                          window = self.__VWAP_win)
+        self.__data[self.__ticker+"VWAP_"+str(self.__VWAP_win)] = indicator_VWAP.volume_weighted_average_price().values   
+     
+    #
+    # -------------------------------- Trend Indicators ------------------------------------
+    #
+    
+    
+    #========================================================================================
     def calculate_indicators (self):
         """
         Calculates the indicators of the dataframe provided. For compatibility 
@@ -843,6 +1164,18 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__cal_WRI(self.__ticker+"HIGHT", self.__ticker+"LOW", 
                       self.__ticker+"CLOSE" )
         self.__cal_ADI(self.__ticker+"HIGHT", self.__ticker+"LOW", 
+                      self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
+        self.__cal_CMF(self.__ticker+"HIGHT", self.__ticker+"LOW", 
+                      self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
+        self.__cal_EOM(self.__ticker+"HIGHT", self.__ticker+"LOW", 
+                     self.__ticker+"VOLUME"  )
+        self.__cal_FI(self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
+        self.__cal_MFI(self.__ticker+"HIGHT", self.__ticker+"LOW", 
+                      self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
+        self.__cal_NVI(self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
+        self.__cal_OBV(self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
+        self.__cal_VPT(self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
+        self.__cal_VWAP(self.__ticker+"HIGHT", self.__ticker+"LOW", 
                       self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
 
 

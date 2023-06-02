@@ -2,7 +2,7 @@
 Created on Mon May 8 19:00:00 2023
 
 @Group: 
-    Theorectical approach by Franci Daniele Prochnow Gaensly and Frederico Alexandre
+    Franci Daniele Prochnow Gaensly and Frederico Alexandre
     Coded by Luis Alvaro Correia
 """
 
