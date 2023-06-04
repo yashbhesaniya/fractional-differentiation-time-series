@@ -27,11 +27,14 @@ set_config(transform_output="pandas")
 class Indicators(BaseEstimator, TransformerMixin):
     
     def __init__(self,
+                 col_open: str,
+                 col_high: str,
+                 col_low: str,
+                 col_close: str,
+                 col_volume: str,
                  ticker: str = '',
                  norm_data: bool = False,
                  scale_method: str = "minmax",
-                 sr_days: int = 20,
-                 r_f: float = 0.02,
                  KAMA_win: int = 10,
                  KAMA_pow1: int = 2,
                  KAMA_pow2: int = 30,
@@ -86,6 +89,18 @@ class Indicators(BaseEstimator, TransformerMixin):
                  MACD_win_slow: int = 26,
                  MACD_win_fast: int = 12,
                  MACD_win_sign: int = 9,                 
+                 MI_win_fast: int = 9,
+                 MI_win_slow: int = 25,                 
+                 PSAR_step: float = 0.02,
+                 PSAR_max_step: float = 0.2,                 
+                 STC_win_slow: int = 50,
+                 STC_win_fast: int = 23,
+                 STC_cycle: int = 10,
+                 STC_sm1: int = 3,
+                 STC_sm2: int = 3,
+                 TRIX_win: int = 15,
+                 VI_win: int = 14,
+                 WMA_win: int = 9,
                  ):
         
         """
@@ -96,16 +111,108 @@ class Indicators(BaseEstimator, TransformerMixin):
                 All entries in function __init__.        
             data (pd.DataFrame): Columns of dataframe containing the variables 
                 to be scaled.
+            col_open (str): column containing the "OPEN" data
+            col_high (str): column containing the "HIGH" data
+            col_low (str): column containing the "LOW" data
+            col_close (str): column containing the "CLOSE" data
+            col_volume (str): column containing the "VOLUME" data
+            ticker (str): ticker of the stock
+            norm_data (bool): indicate to normalize data after calculating indicators
+            scale_method (str): indicates the method for scaling (minmax, standard)
+            KAMA_win (int):
+            KAMA_pow1 (int): 
+            KAMA_pow2 (int):
+            PPO_win_slow (int):
+            PPO_win_fast (int):
+            PPO_win_sign (int):
+            PVO_win_slow (int):
+            PVO_win_fast (int):
+            PVO_win_sign (int):
+            ROC_win (int):
+            RSI_win (int):
+            StRSI_win (int):
+            StRSI_sm1 (int):
+            StRSI_sm2 (int):
+            SO_win (int):
+            SO_sm (int):
+            AOI_win1 (int):
+            AOI_win2 (int):
+            TSI_win_slow (int):
+            TSI_win_fast (int):
+            UO_win1 (int):
+            UO_win2 (int):
+            UO_win3 (int):
+            UO_weight1 (float):
+            UO_weight2 (float):
+            UO_weight3 (float):
+            WRI_lbp (int):
+            CMF_win (int):
+            EOM_win (int):
+            FI_win (int):
+            MFI_win (int):
+            VWAP_win (int):
+            ADX_win (int):
+            AROON_win (int):
+            CCI_win (int):
+            CCI_const (float):
+            DPO_win (int):
+            EMA_win (int):
+            ICHI_win1 (int):
+            ICHI_win2 (int):
+            ICHI_win3 (int):
+            ICHI_visual (bool):
+            KST_roc1 (int):
+            KST_roc2 (int):
+            KST_roc3 (int):
+            KST_roc4 (int):
+            KST_win1 (int):
+            KST_win2 (int):
+            KST_win3 (int):
+            KST_win4 (int):
+            KST_nsig (int):
+            MACD_win_slow (int):
+            MACD_win_fast (int):
+            MACD_win_sign (int):                 
+            MI_win_fast (int):
+            MI_win_slow (int):                 
+            PSAR_step (float):
+            PSAR_max_step (float):                 
+            STC_win_slow (int):
+            STC_win_fast (int):
+            STC_cycle (int):
+            STC_sm1 (int):
+            STC_sm2 (int):
+            TRIX_win (int):
+            VI_win (int):
+            WMA_win (int):
 
         Returns:
             None
 
         """
+        if (type(col_open) != str):
+            raise ValueError('Indicators Class - Parameter col_open must be a valid str')
+
+        if (type(col_high) != str):
+            raise ValueError('Indicators Class - Parameter col_high must be a valid str')
+
+        if (type(col_low) != str):
+            raise ValueError('Indicators Class - Parameter col_low must be a valid str')
+
+        if (type(col_close) != str):
+            raise ValueError('Indicators Class - Parameter col_close must be a valid str')
+
+        if (type(col_volume) != str):
+            raise ValueError('Indicators Class - Parameter col_volume must be a valid str')
+
         self.__ticker = (ticker+'_' if ticker!='' else '')
+        self.__col_open = self.__ticker + col_open
+        self.__col_high = self.__ticker + col_high
+        self.__col_low = self.__ticker + col_low
+        self.__col_close = self.__ticker + col_close
+        self.__col_volume = self.__ticker + col_volume
         self.__norm_data = norm_data
         self.__scale_method = scale_method
-        self.__sr_days = sr_days
-        self.__r_f = r_f
         
         # Loading parameters for Momentum Indicators
         self.__KAMA_win = KAMA_win
@@ -166,6 +273,18 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__MACD_win_slow = MACD_win_slow
         self.__MACD_win_fast = MACD_win_fast
         self.__MACD_win_sign = MACD_win_sign
+        self.__MI_win_slow = MI_win_slow
+        self.__MI_win_fast = MI_win_fast
+        self.__PSAR_step = PSAR_step
+        self.__PSAR_max_step = PSAR_max_step                 
+        self.__STC_win_slow = STC_win_slow
+        self.__STC_win_fast = STC_win_fast
+        self.__STC_cycle = STC_cycle
+        self.__STC_sm1 = STC_sm1
+        self.__STC_sm2 = STC_sm2
+        self.__TRIX_win = TRIX_win
+        self.__VI_win = VI_win
+        self.__WMA_win = WMA_win
             
     @property
     def data(self):
@@ -176,23 +295,11 @@ class Indicators(BaseEstimator, TransformerMixin):
         return self.__ticker
 
     @property
-    def norm_data(self):
-        return self.__norm_data
-
-    @property
     def scale_method(self):
         return self.__scale_method
 
-    @property
-    def sr_days(self):
-        return self.__sr_days
-
-    @property
-    def r_f(self):
-        return self.__r_f
-
     def __scale_data(self, 
-                   col_Name:str) -> pd.Series(dtype=float):
+                   col_name:str) -> pd.Series(dtype=float):
         """
         Scale data according with the scale_method selected.
             
@@ -206,15 +313,14 @@ class Indicators(BaseEstimator, TransformerMixin):
             (np.array[]): scaled data
 
         """
-        values = self.__data[col_Name].values.reshape(-1,1)
-        if self.__scale_method == "minmax":
+        values = self.__data[col_name].values.reshape(-1,1)
+        if self.scale_method == "minmax":
             scaler = MinMaxScaler(feature_range=(-1,1))
         else:
             scaler = StandardScaler()
         return scaler.fit_transform(values).values
 
-    def __cal_price_change(self, 
-                         col_name:str) -> None:
+    def __cal_price_change(self) -> None:
         """
         Calculates the price change of a column passed as parameter and creates
             a new column whose name is composed by col_name+"_price_change" in 
@@ -224,17 +330,15 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_name (str): Column name.    
 
         Returns:
             None.
 
         """
-        price_change = self.__data[col_name].diff()
-        self.__data[col_name+"_price_change"] = pd.Series(price_change, index = self.__data.index)
+        price_change = self.__data[self.__col_close].diff()
+        self.__data[self.__col_close+"_price_change"] = pd.Series(price_change, index = self.__data.index)
     
-    def __cal_pct_change(self, 
-                       col_name:str) -> None:
+    def __cal_pct_change(self) -> None:
         """
         Calculates the percentual price change of a column passed as parameter 
             and creates a new column whose name is composed by col_name+"_price_change" 
@@ -244,17 +348,15 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_name (str): Column name.    
 
         Returns:
             None.
 
         """
-        pct_change = self.__data[col_name].pct_change()
-        self.__data[col_name+"_pct_change"] = pd.Series(pct_change, index = self.__data.index)
+        pct_change = self.__data[self.__col_close].pct_change()
+        self.__data[self.__col_close+"_pct_change"] = pd.Series(pct_change, index = self.__data.index)
     
-    def __cal_return(self, 
-                   col_name:str) -> None:
+    def __cal_return(self) -> None:
         """
         Calculates the return of a column passed as parameter and creates a new 
             column whose name is composed by col_name+"_returns" in the data-frame 
@@ -264,20 +366,18 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_name (str): Column name.    
 
         Returns:
             None.
 
         """
-        values = self.__data[col_name].values
+        values = self.__data[self.__col_close].values
         log_returns = np.zeros_like(values)
         for idx in range(1,len(values)):
             log_returns[idx] = values[idx]/values[idx-1]
-        self.__data[col_name+"_returns"] = pd.Series(log_returns, index = self.__data.index)
+        self.__data[self.__col_close+"_returns"] = pd.Series(log_returns, index = self.__data.index)
     
-    def __cal_log_return(self, 
-                       col_name:str) -> None:
+    def __cal_log_return(self) -> None:
         """
         Calculates the log-return of a column passed as parameter and creates a new 
             column whose name is composed by col_name+"_log_returns" in the data-frame 
@@ -287,23 +387,18 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_name (str): Column name.    
 
         Returns:
             None.
 
         """
-        values = self.__data[col_name].values
+        values = self.__data[self.__col_close].values
         log_returns = np.zeros_like(values)
         for idx in range(1,len(values)):
             log_returns[idx] = math.log(values[idx]/values[idx-1])
-        self.__data[col_name+"_log_returns"] = pd.Series(log_returns, index = self.__data.index)
+        self.__data[self.__col_close+"_log_returns"] = pd.Series(log_returns, index = self.__data.index)
     
-    def __cal_Diff(self, 
-                 col_open: str,
-                 col_high: str,
-                 col_low: str,
-                 col_close: str ) -> None:
+    def __cal_Diff(self) -> None:
         """
         Calculates the amplitude between "col_high" and "col_low" and "col_open" 
             and "col_close", passed as parameter and creates a new columns named 
@@ -314,16 +409,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_open (str): name of the column with the "OPEN" data prices
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_open,col_high,col_low,col_close]].values
+        values = self.__data[[self.__col_open,self.__col_high,self.__col_low,self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["open","high","low","close"]
         self.__data[self.__ticker+"AMPL"] = (df_wrk["high"]-df_wrk["low"]).values
@@ -331,13 +422,12 @@ class Indicators(BaseEstimator, TransformerMixin):
     
     def __cal_RA(self, 
                rol_win1: int,
-               rol_win2: int,
-               col_close: str ) -> None:
+               rol_win2: int ) -> None:
         """
-        Calculates the rolling standard deviations of closing prices passed in 
-            "col_close", considering the windoes "rol_win1" and "rol_win2" passed 
-            as arguments and creates new columns named "RA"+rol_win1 and 
-            "RA"+rol_win2, respectively, in the data-frame passed as argument.
+        Calculates the rolling standard deviations of closing prices considering 
+            the windoes "rol_win1" and "rol_win2" passed as arguments and creates 
+            new columns named "RA"+rol_win1 and "RA"+rol_win2, respectively, in 
+            the data-frame passed as argument.
             For compatibility purposes, it was added the ticker label in front 
             of all columns created.
             
@@ -346,13 +436,12 @@ class Indicators(BaseEstimator, TransformerMixin):
                 All entries in function __init__.        
             rol_win1 (int): number rolling of days to calculate the first std() 
             rol_win2 (int): number rolling of days to calculate the second std() 
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[col_close].values
+        values = self.__data[self.__col_close].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         self.__data[self.__ticker+"RA_"+str(rol_win1)] = df_wrk["close"].rolling(window=rol_win1).std().values
@@ -360,8 +449,7 @@ class Indicators(BaseEstimator, TransformerMixin):
     
     def __cal_MA(self, 
                rol_win1: int,
-               rol_win2: int,
-               col_close: str ) -> None:
+               rol_win2: int ) -> None:
         """
         Calculates the moving average of "CLOSE" prices passed in "col_close", 
             considering the windoes "rol_win1" and "rol_win2" passed as arguments 
@@ -375,13 +463,12 @@ class Indicators(BaseEstimator, TransformerMixin):
                 All entries in function __init__.        
             rol_win1 (int): number rolling of days to calculate the first mean() 
             rol_win2 (int): number rolling of days to calculate the second mean() 
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[col_close].values
+        values = self.__data[self.__col_close].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         self.__data[self.__ticker+"MA_"+str(rol_win1)] = df_wrk["close"].rolling(rol_win1, min_periods=1).mean().values
@@ -390,8 +477,7 @@ class Indicators(BaseEstimator, TransformerMixin):
     def __cal_VMA(self, 
                 rol_win1: int,
                 rol_win2: int,
-                rol_win3: int,
-                col_volume: str ) -> None:
+                rol_win3: int ) -> None:
         """
         Calculates the moving average of "VOLUME" passed in "col_volume", 
             considering the windoes "rol_win1", "rol_win2" and "rol_win3" passed 
@@ -406,13 +492,12 @@ class Indicators(BaseEstimator, TransformerMixin):
             rol_win1 (int): number rolling of days to calculate the first mean() 
             rol_win2 (int): number rolling of days to calculate the second mean() 
             rol_win3 (int): number rolling of days to calculate the third mean() 
-            col_volume (str): name of the column with the "VOLUME" data
 
         Returns:
             None.
 
         """
-        values = self.__data[col_volume].values
+        values = self.__data[self.__col_volume].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["volume"]
         self.__data[self.__ticker+"V_MA_"+str(rol_win1)] = df_wrk["volume"].rolling(rol_win1, min_periods=1).mean().values
@@ -423,8 +508,7 @@ class Indicators(BaseEstimator, TransformerMixin):
     #
     # -------------------------------- Momentum Indicators ------------------------------------
     #
-    def __cal_KAMA(self,
-               col_close: str ) -> None:
+    def __cal_KAMA(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -439,13 +523,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[col_close].values
+        values = self.__data[self.__col_close].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
@@ -453,11 +536,10 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_KAMA = KAMAIndicator(close=df_wrk["close"], window = self.__KAMA_win, 
                                        pow1 = self.__KAMA_pow1, pow2 = self.__KAMA_pow2)
 
-        field_nm = f'{self.__KAMA_win:02d}_({self.__KAMA_pow1:02d},{self.__KAMA_pow2:02d})'
+        field_nm = f'w{self.__KAMA_win:02d}p({self.__KAMA_pow1:02d},{self.__KAMA_pow2:02d})'
         self.__data[self.__ticker+"KAMA_"+field_nm] = indicator_KAMA.kama().values
     
-    def __cal_PPO(self,
-               col_close: str ) -> None:
+    def __cal_PPO(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -473,13 +555,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[col_close].values
+        values = self.__data[self.__col_close].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
@@ -487,11 +568,10 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_PPO = PercentagePriceOscillator(close=df_wrk["close"], window_slow = self.__PPO_win_slow, 
                                        window_fast = self.__PPO_win_fast, window_sign = self.__PPO_win_sign)
 
-        field_nm = f'({self.__PPO_win_slow:02d},{self.__PPO_win_fast:02d})'
+        field_nm = f'w({self.__PPO_win_slow:02d},{self.__PPO_win_fast:02d})'
         self.__data[self.__ticker+"PPO_"+field_nm] = indicator_PPO.ppo().values
     
-    def __cal_PVO(self,
-               col_volume: str ) -> None:
+    def __cal_PVO(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -507,13 +587,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_volume (str): name of the column with the "VOLUME" data
 
         Returns:
             None.
 
         """
-        values = self.__data[col_volume].values
+        values = self.__data[self.__col_volume].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["volume"]
         
@@ -521,13 +600,13 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_PVO = PercentageVolumeOscillator(volume = df_wrk["volume"], window_slow = self.__PVO_win_slow, 
                                        window_fast = self.__PVO_win_fast, window_sign = self.__PVO_win_sign)
 
-        field_nm = f'({self.__PVO_win_slow:02d},{self.__PVO_win_fast:02d})'
+        field_nm = f'w({self.__PVO_win_slow:02d},{self.__PVO_win_fast:02d})'+ \
+                    f's{self.__PVO_win_sign:02d}'
         self.__data[self.__ticker+"PVO_"+field_nm] = indicator_PVO.pvo().values
         self.__data[self.__ticker+"PVOH_"+field_nm] = indicator_PVO.pvo_hist().values
         self.__data[self.__ticker+"PVOsgn_"+field_nm] = indicator_PVO.pvo_signal().values
     
-    def __cal_ROC(self,
-               col_close: str ) -> None:
+    def __cal_ROC(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -543,13 +622,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[col_close].values
+        values = self.__data[self.__col_close].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
@@ -558,8 +636,7 @@ class Indicators(BaseEstimator, TransformerMixin):
 
         self.__data[self.__ticker+"ROC_"+str(self.__ROC_win)] = indicator_ROC.roc().values
     
-    def __cal_RSI(self,
-               col_close: str ) -> None:
+    def __cal_RSI(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -575,13 +652,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[col_close].values
+        values = self.__data[self.__col_close].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
@@ -590,8 +666,7 @@ class Indicators(BaseEstimator, TransformerMixin):
 
         self.__data[self.__ticker+"RSI_"+str(self.__RSI_win)] = indicator_RSI.rsi().values
     
-    def __cal_StochRSI(self,
-               col_close: str ) -> None:
+    def __cal_StochRSI(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -608,13 +683,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[col_close].values
+        values = self.__data[self.__col_close].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
@@ -622,14 +696,13 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_StRSI = StochRSIIndicator(close=df_wrk["close"], window = self.__StRSI_win,
                                             smooth1 = self.__StRSI_sm1, smooth2 = self.__StRSI_sm2)
 
-        self.__data[self.__ticker+"StRSI_"+str(self.__StRSI_win)] = indicator_StRSI.stochrsi().values
-        self.__data[self.__ticker+"StRSId_"+str(self.__StRSI_win)] = indicator_StRSI.stochrsi_d().values
-        self.__data[self.__ticker+"StRSIk_"+str(self.__StRSI_win)] = indicator_StRSI.stochrsi_k().values
+        field_nm = f'w{self.__StRSI_win:02d}'+ \
+                    f's({self.__StRSI_sm1:02d},{self.__StRSI_sm2:02d})'
+        self.__data[self.__ticker+"StRSI_"+field_nm] = indicator_StRSI.stochrsi().values
+        self.__data[self.__ticker+"StRSId_"+field_nm] = indicator_StRSI.stochrsi_d().values
+        self.__data[self.__ticker+"StRSIk_"+field_nm] = indicator_StRSI.stochrsi_k().values
     
-    def __cal_SO(self,
-                 col_high: str,
-                 col_low: str,
-                 col_close: str ) -> None:
+    def __cal_SO(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -647,15 +720,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_close]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close"]
         
@@ -664,12 +734,11 @@ class Indicators(BaseEstimator, TransformerMixin):
                                             close=df_wrk["close"], window = self.__SO_win,
                                             smooth_window = self.__SO_sm)
 
-        self.__data[self.__ticker+"SO_"+str(self.__SO_win)] = indicator_SO.stoch().values
-        self.__data[self.__ticker+"SOsgn_"+str(self.__SO_win)] = indicator_SO.stoch_signal().values    
+        field_nm = f'w{self.__SO_win:02d}s{self.__SO_sm:02d}'
+        self.__data[self.__ticker+"SO_"+field_nm] = indicator_SO.stoch().values
+        self.__data[self.__ticker+"SOsgn_"+field_nm] = indicator_SO.stoch_signal().values    
      
-    def __cal_AOI(self,
-                 col_high: str,
-                 col_low: str ) -> None:
+    def __cal_AOI(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -685,14 +754,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low]].values
+        values = self.__data[[self.__col_high,self.__col_low]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low"]
         
@@ -700,11 +767,10 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_AOI = AwesomeOscillatorIndicator(high = df_wrk["high"], low = df_wrk["low"], 
                                                    window1 = self.__AOI_win1, window2 = self.__AOI_win2)
 
-        field_nm = f'({self.__AOI_win1:02d},{self.__AOI_win2:02d})'
+        field_nm = f'w({self.__AOI_win1:02d},{self.__AOI_win2:02d})'
         self.__data[self.__ticker+"AOI_"+field_nm] = indicator_AOI.awesome_oscillator().values   
      
-    def __cal_TSI(self,
-               col_close: str ) -> None:
+    def __cal_TSI(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -719,13 +785,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[col_close].values
+        values = self.__data[self.__col_close].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
@@ -733,13 +798,10 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_TSI = TSIIndicator(close=df_wrk["close"], window_slow = self.__TSI_win_slow, 
                                        window_fast = self.__TSI_win_fast )
 
-        field_nm = f'({self.__TSI_win_slow:02d},{self.__TSI_win_fast:02d})'
+        field_nm = f'w({self.__TSI_win_slow:02d},{self.__TSI_win_fast:02d})'
         self.__data[self.__ticker+"TSI_"+field_nm] = indicator_TSI.tsi().values
 
-    def __cal_UO(self,
-                 col_high: str,
-                 col_low: str,
-                 col_close: str ) -> None:
+    def __cal_UO(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -755,15 +817,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_close]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close"]
         
@@ -773,13 +832,11 @@ class Indicators(BaseEstimator, TransformerMixin):
                                           window2 = self.__UO_win2, window3 = self.__UO_win3,
                                           weight1 = self.__UO_weight1, weight2 = self.__UO_weight2, 
                                           weight3 = self.__UO_weight3 )
-        field_nm = f'({self.__UO_win1:02d},{self.__UO_win2:02d},{self.__UO_win3:02d})'
+        field_nm = f'wi({self.__UO_win1:02d},{self.__UO_win2:02d},{self.__UO_win3:02d})'+ \
+                    f'wg({self.__UO_weight1:.1f},{self.__UO_weight2:.1f},{self.__UO_weight3:.1f})'
         self.__data[self.__ticker+"UO_"+field_nm] = indicator_UO.ultimate_oscillator().values   
         
-    def __cal_WRI(self,
-                 col_high: str,
-                 col_low: str,
-                 col_close: str ) -> None:
+    def __cal_WRI(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -811,15 +868,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_close]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close"]
         
@@ -831,11 +885,7 @@ class Indicators(BaseEstimator, TransformerMixin):
     #
     # -------------------------------- Volume Indicators ------------------------------------
     #
-    def __cal_ADI(self,
-                 col_high: str,
-                 col_low: str,
-                 col_close: str, 
-                 col_volume: str ) -> None:
+    def __cal_ADI(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -850,16 +900,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
-            col_volume (str): name of the column with the "VOLUME" data
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_close, col_volume]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close, self.__col_volume]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close", "volume"]
         
@@ -868,11 +914,7 @@ class Indicators(BaseEstimator, TransformerMixin):
                                           close=df_wrk["close"], volume = df_wrk["volume"] )
         self.__data[self.__ticker+"ADI"] = indicator_ADI.acc_dist_index().values   
      
-    def __cal_CMF(self,
-                 col_high: str,
-                 col_low: str,
-                 col_close: str, 
-                 col_volume: str ) -> None:
+    def __cal_CMF(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -887,16 +929,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
-            col_volume (str): name of the column with the "VOLUME" data
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_close, col_volume]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close, self.__col_volume]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close", "volume"]
         
@@ -906,10 +944,7 @@ class Indicators(BaseEstimator, TransformerMixin):
                                           window = self.__CMF_win)
         self.__data[self.__ticker+"CMF_"+str(self.__CMF_win)] = indicator_CMF.chaikin_money_flow().values   
      
-    def __cal_EOM(self,
-                 col_high: str,
-                 col_low: str,
-                 col_volume: str ) -> None:
+    def __cal_EOM(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -925,15 +960,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_volume (str): name of the column with the "VOLUME" data
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_volume]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_volume]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","volume"]
         
@@ -943,9 +975,7 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__data[self.__ticker+"EOM_"+str(self.__EOM_win)] = indicator_EOM.ease_of_movement().values   
         self.__data[self.__ticker+"EMV_"+str(self.__EOM_win)] = indicator_EOM.sma_ease_of_movement().values   
      
-    def __cal_FI(self,
-               col_close: str,
-               col_volume: str ) -> None:
+    def __cal_FI(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -963,14 +993,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
-            col_volume (str): name of the column with the "VOLUME" data
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_close, col_volume]].values
+        values = self.__data[[self.__col_close, self.__col_volume]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close","volume"]
         
@@ -981,11 +1009,7 @@ class Indicators(BaseEstimator, TransformerMixin):
 
         self.__data[self.__ticker+"FI_"+str(self.__FI_win)] = indicator_FI.force_index().values
 
-    def __cal_MFI(self,
-                 col_high: str,
-                 col_low: str,
-                 col_close: str, 
-                 col_volume: str ) -> None:
+    def __cal_MFI(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1005,16 +1029,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
-            col_volume (str): name of the column with the "VOLUME" data
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_close, col_volume]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close, self.__col_volume]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close", "volume"]
         
@@ -1024,9 +1044,7 @@ class Indicators(BaseEstimator, TransformerMixin):
                                           window = self.__MFI_win)
         self.__data[self.__ticker+"MFI_"+str(self.__MFI_win)] = indicator_MFI.money_flow_index().values   
      
-    def __cal_NVI(self,
-               col_close: str,
-               col_volume: str ) -> None:
+    def __cal_NVI(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1048,7 +1066,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             None.
 
         """
-        values = self.__data[[col_close, col_volume]].values
+        values = self.__data[[self.__col_close, self.__col_volume]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close","volume"]
         
@@ -1058,9 +1076,7 @@ class Indicators(BaseEstimator, TransformerMixin):
 
         self.__data[self.__ticker+"NVI"] = indicator_NVI.negative_volume_index().values
         
-    def __cal_OBV(self,
-               col_close: str,
-               col_volume: str ) -> None:
+    def __cal_OBV(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1075,14 +1091,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
-            col_volume (str): name of the column with the "VOLUME" data
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_close, col_volume]].values
+        values = self.__data[[self.__col_close, self.__col_volume]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close","volume"]
         
@@ -1092,9 +1106,7 @@ class Indicators(BaseEstimator, TransformerMixin):
 
         self.__data[self.__ticker+"OBV"] = indicator_OBV.on_balance_volume().values
         
-    def __cal_VPT(self,
-               col_close: str,
-               col_volume: str ) -> None:
+    def __cal_VPT(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1110,14 +1122,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
-            col_volume (str): name of the column with the "VOLUME" data
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_close, col_volume]].values
+        values = self.__data[[self.__col_close, self.__col_volume]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close","volume"]
         
@@ -1127,11 +1137,7 @@ class Indicators(BaseEstimator, TransformerMixin):
 
         self.__data[self.__ticker+"VPT"] = indicator_VPT.volume_price_trend().values
         
-    def __cal_VWAP(self,
-                 col_high: str,
-                 col_low: str,
-                 col_close: str, 
-                 col_volume: str ) -> None:
+    def __cal_VWAP(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1150,16 +1156,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
-            col_volume (str): name of the column with the "VOLUME" data
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_close, col_volume]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close, self.__col_volume]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close", "volume"]
         
@@ -1167,15 +1169,13 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_VWAP = VolumeWeightedAveragePrice(high = df_wrk["high"], low = df_wrk["low"], 
                                           close=df_wrk["close"], volume = df_wrk["volume"],
                                           window = self.__VWAP_win)
-        self.__data[self.__ticker+"VWAP_"+str(self.__VWAP_win)] = indicator_VWAP.volume_weighted_average_price().values   
+        self.__data[self.__ticker+"VWAP_"+str(self.__VWAP_win)] = \
+                indicator_VWAP.volume_weighted_average_price().values   
      
     #
     # -------------------------------- Trend Indicators ------------------------------------
     #
-    def __cal_ADX(self,
-                 col_high: str,
-                 col_low: str,
-                 col_close: str ) -> None:
+    def __cal_ADX(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1198,15 +1198,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_close]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close"]
         
@@ -1217,8 +1214,7 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__data[self.__ticker+"ADXP_"+str(self.__ADX_win)] = indicator_ADX.adx_pos().values   
         self.__data[self.__ticker+"ADXN_"+str(self.__ADX_win)] = indicator_ADX.adx_neg().values   
     
-    def __cal_Aroon(self,
-                 col_close: str ) -> None:
+    def __cal_Aroon(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1237,13 +1233,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_close]].values
+        values = self.__data[[self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
@@ -1253,10 +1248,7 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__data[self.__ticker+"AROON_"+str(self.__AROON_win)] = indicator_AROON.aroon_indicator().values   
         self.__data[self.__ticker+"AROONU_"+str(self.__AROON_win)] = indicator_AROON.aroon_up().values   
     
-    def __cal_CCI(self,
-                 col_high: str,
-                 col_low: str,
-                 col_close: str ) -> None:
+    def __cal_CCI(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1267,7 +1259,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             which is a show of strength. Low negative readings indicate that prices 
             are well below their average, which is a show of weakness. It is 
             calculated over "col_high", "col_low" and "col_close" passed as 
-            parameter and creates corresponding "ADX"+ADX_window columns in the 
+            parameter and creates corresponding "CCI"+CCI_window columns in the 
             data-frame passed as argument.
             For compatibility purposes, it was added the ticker label in front 
             of all columns created.
@@ -1275,15 +1267,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_close]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close"]
         
@@ -1291,10 +1280,9 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_CCI = CCIIndicator(high = df_wrk["high"], low = df_wrk["low"], 
                                      close=df_wrk["close"], window = self.__CCI_win,
                                      constant = self.__CCI_const)
-        self.__data[self.__ticker+"CCI_"+str(self.__ADX_win)] = indicator_CCI.cci().values   
+        self.__data[self.__ticker+"CCI_"+str(self.__CCI_win)] = indicator_CCI.cci().values   
     
-    def __cal_DPO(self,
-                 col_close: str ) -> None:
+    def __cal_DPO(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1310,13 +1298,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_close]].values
+        values = self.__data[[self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
@@ -1324,8 +1311,7 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_DPO = DPOIndicator(close=df_wrk["close"], window = self.__DPO_win)
         self.__data[self.__ticker+"DPO_"+str(self.__DPO_win)] = indicator_DPO.dpo().values   
     
-    def __cal_EMA(self,
-                 col_close: str ) -> None:
+    def __cal_EMA(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1339,13 +1325,12 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_close]].values
+        values = self.__data[[self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
@@ -1353,9 +1338,36 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_EMA = EMAIndicator(close=df_wrk["close"], window = self.__EMA_win)
         self.__data[self.__ticker+"EMA_"+str(self.__EMA_win)] = indicator_EMA.ema_indicator().values   
     
-    def __cal_Ichimoku(self,
-                 col_high: str,
-                 col_low: str ) -> None:
+    def __cal_SMA(self,
+                 SMA_win: int) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates the SMA - Simple Moving Average. It is calculated over 
+            "col_close" passed as parameter and creates corresponding 
+            "SMA_"+SMA_window columns in the data-frame passed as argument.
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_close (str): name of the column with the "CLOSE" data prices
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[self.__col_close]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["close"]
+        
+        # Initialize Simple Moving Average Indicator
+        indicator_SMA = SMAIndicator(close=df_wrk["close"], window = SMA_win)
+        self.__data[self.__ticker+"SMA_"+str(SMA_win)] = indicator_SMA.sma_indicator().values   
+    
+    def __cal_Ichimoku(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1365,24 +1377,21 @@ class Indicators(BaseEstimator, TransformerMixin):
             trend direction, gauges momentum and provides trading signals. 
             Ichimoku Kinko Hyo translates into “one look equilibrium chart”. 
             With one look, chartists can identify the trend and look for potential 
-            signals within that trend. It is calculated over "col_high", "col_low" 
-            and "col_close", and 03 window parameters, and creates corresponding 
-            "ICHI"+ICHI_window(1,2,3) columns in the data-frame passed as argument.
+            signals within that trend. It is calculated over "col_high" and "col_low", 
+            and 03 window parameters, and creates corresponding "ICHI"+ICHI_window(1,2,3)
+            columns in the data-frame passed as argument.
             For compatibility purposes, it was added the ticker label in front 
             of all columns created.
             
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low]].values
+        values = self.__data[[self.__col_high,self.__col_low]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low"]
         
@@ -1390,14 +1399,13 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_ICHI = IchimokuIndicator(high = df_wrk["high"], low = df_wrk["low"], 
                                      window1 = self.__ICHI_win1, window2 = self.__ICHI_win2,  
                                      window3 = self.__ICHI_win3, visual = self.__ICHI_visual)
-        field_nm = f'({self.__ICHI_win1:02d},{self.__ICHI_win2:02d},{self.__ICHI_win3:02d})'
+        field_nm = f'w({self.__ICHI_win1:02d},{self.__ICHI_win2:02d},{self.__ICHI_win3:02d})'
         self.__data[self.__ticker+"ICHIA_"+field_nm] = indicator_ICHI.ichimoku_a().values   
         self.__data[self.__ticker+"ICHIB_"+field_nm] = indicator_ICHI.ichimoku_b().values   
         self.__data[self.__ticker+"ICHIBL_"+field_nm] = indicator_ICHI.ichimoku_base_line().values   
         self.__data[self.__ticker+"ICHICL_"+field_nm] = indicator_ICHI.ichimoku_conversion_line().values   
     
-    def __cal_KST(self,
-                 col_close: str ) -> None:
+    def __cal_KST(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1422,7 +1430,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             None.
 
         """
-        values = self.__data[[col_close]].values
+        values = self.__data[[self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
@@ -1432,14 +1440,13 @@ class Indicators(BaseEstimator, TransformerMixin):
                                      roc4 = self.__KST_roc4, window1 = self.__KST_win1,
                                      window2 = self.__KST_win2, window3 = self.__KST_win3,
                                      window4 = self.__KST_win4, nsig = self.__KST_nsig)
-        field_rocnm = f'({self.__KST_roc1:02d},{self.__KST_roc2:02d},{self.__KST_roc3:02d},{self.__KST_roc4:02d})'
-        field_winnm = f'({self.__KST_win1:02d},{self.__KST_win2:02d},{self.__KST_win3:02d},{self.__KST_win4:02d})'
+        field_rocnm = f'r({self.__KST_roc1:02d},{self.__KST_roc2:02d},{self.__KST_roc3:02d},{self.__KST_roc4:02d})'
+        field_winnm = f'w({self.__KST_win1:02d},{self.__KST_win2:02d},{self.__KST_win3:02d},{self.__KST_win4:02d})'
         self.__data[self.__ticker+"KST_"+field_rocnm+"_"+field_winnm] = indicator_KST.kst().values   
         self.__data[self.__ticker+"KSTD_"+field_rocnm+"_"+field_winnm] = indicator_KST.kst_diff().values   
         self.__data[self.__ticker+"KSTS_"+field_rocnm+"_"+field_winnm] = indicator_KST.kst_sig().values   
     
-    def __cal_MACD(self,
-                 col_close: str ) -> None:
+    def __cal_MACD(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1456,24 +1463,234 @@ class Indicators(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_close]].values
+        values = self.__data[[self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
         # Initialize Moving Average Convergence Divergence (MACD) Indicator
         indicator_MACD = MACD(close=df_wrk["close"], window_slow = self.__MACD_win_slow,
                                      window_fast = self.__MACD_win_fast, window_sign = self.__MACD_win_sign )
-        field_nm = f'({self.__MACD_win_slow:02d},{self.__MACD_win_fast:02d},{self.__MACD_win_sign:02d})'
+        field_nm = f'w({self.__MACD_win_slow:02d},{self.__MACD_win_fast:02d},{self.__MACD_win_sign:02d})'
         self.__data[self.__ticker+"MACD_"+field_nm] = indicator_MACD.macd().values   
         self.__data[self.__ticker+"MACDD_"+field_nm] = indicator_MACD.macd_diff().values   
         self.__data[self.__ticker+"MACDS_"+field_nm] = indicator_MACD.macd_signal().values   
     
+    def __cal_MI(self) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates the Mass Index (MI) whch uses the high-low range to identify 
+            trend reversals based on range expansions. It identifies range bulges 
+            that can foreshadow a reversal of the current trend. It is calculated 
+            over "col_high" and "col_low", and 02 window parameters, creating corresponding 
+            "MI_"+MI_window(fast, slow) columns in the data-frame passed as argument.
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[self.__col_high,self.__col_low]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low"]
+        
+        # Initialize Mass Index Indicator
+        indicator_MI = MassIndex(high = df_wrk["high"], low = df_wrk["low"], 
+                                     window_fast = self.__MI_win_fast, 
+                                     window_slow = self.__MI_win_slow)
+        field_nm = f'w({self.__MI_win_fast:02d},{self.__MI_win_slow:02d})'
+        self.__data[self.__ticker+"MI_"+field_nm] = indicator_MI.mass_index().values   
+    
+    def __cal_PSAR(self) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates the Parabolic Stop and Reverse (Parabolic SAR). The Parabolic 
+            Stop and Reverse, more commonly known as the Parabolic SAR,is a 
+            trend-following indicator developed by J. Welles Wilder. The Parabolic 
+            SAR is displayed as a single parabolic line (or dots) underneath the 
+            price bars in an uptrend, and above the price bars in a downtrend. It is 
+            calculated over "col_high", "col_low" and "col_close" passed as 
+            parameter and creates corresponding "ADX"+ADX_window columns in the 
+            data-frame passed as argument.
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low","close"]
+        
+        # Initialize Parabolic Stop and Reverse Indicator
+        indicator_PSAR = PSARIndicator(high = df_wrk["high"], low = df_wrk["low"], 
+                                     close=df_wrk["close"], step = self.__PSAR_step,
+                                     max_step = self.__PSAR_max_step, fillna = True)
+        field_nm = f's({self.__PSAR_step:.2f},{self.__PSAR_max_step:.1f})'
+        self.__data[self.__ticker+"PSAR_"+field_nm] = indicator_PSAR.psar().values   
+        self.__data[self.__ticker+"PSARD_"+field_nm] = indicator_PSAR.psar_down().values   
+        self.__data[self.__ticker+"PSARDI_"+field_nm] = indicator_PSAR.psar_down_indicator().values   
+        self.__data[self.__ticker+"PSARU_"+field_nm] = indicator_PSAR.psar_up().values   
+        self.__data[self.__ticker+"PSARUI_"+field_nm] = indicator_PSAR.psar_up_indicator().values   
+    
+    def __cal_STC(self) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates Schaff Trend Cycle (STC) which is a charting indicator that 
+            is commonly used to identify market trends and provide buy and sell 
+            signals to traders. Developed in 1999 by noted currency trader Doug 
+            Schaff, STC is a type of oscillator and is based on the assumption 
+            that, regardless of time frame, currency trends accelerate and decelerate 
+            in cyclical patterns. It is calculated over "CLOSE" prices passed in 
+            "col_close", "STC_win_slow", "STC_win_fast", "STC_sm1" and "STC_sm2" 
+            creating new columns named "STC"+STC_(slow, fast)_(sm1, sm2) in the 
+            data-frame passed as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_close (str): name of the column with the "CLOSE" data prices
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[self.__col_close].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["close"]
+        
+        # Initialize Stochastic RSI Indicator
+        indicator_STC = STCIndicator(close=df_wrk["close"], window_slow = self.__STC_win_slow,
+                                     window_fast = self.__STC_win_fast, cycle = self.__STC_cycle, 
+                                     smooth1 = self.__STC_sm1, smooth2 = self.__STC_sm2)
+
+        field_nm = f'w({self.__STC_win_slow:02d},{self.__STC_win_fast:02d})'+ \
+                    f'c{self.__STC_cycle:1d}'+ \
+                    f's({self.__STC_sm1:02d},{self.__STC_sm2:02d})'
+        self.__data[self.__ticker+"STC_"+field_nm] = indicator_STC.stc().values
+    
+    def __cal_TRIX(self) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates Trix (TRIX) that shows the percent rate of change of a triple 
+            exponentially smoothed moving average. It is designed to filter out 
+            insignificant price movements. Chartists can use TRIX to generate 
+            signals similar to MACD. A signal line can be applied to look for signal 
+            line crossovers. A directional bias can be determined with the absolute 
+            level. Bullish and bearish divergences can be used to anticipate reversals.
+            It is calculated over "CLOSE" prices passed in "col_close", "TRIX_win" 
+            creating new columns named "TRIX_"+TRIX_win in the data-frame passed 
+            as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            col_close (str): name of the column with the "CLOSE" data prices
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[self.__col_close].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["close"]
+        
+        # Initialize Stochastic RSI Indicator
+        indicator_TRIX = TRIXIndicator(close=df_wrk["close"], window = self.__TRIX_win )
+
+        field_nm = f'w({self.__TRIX_win:02d})'
+        self.__data[self.__ticker+"TRIX_"+field_nm] = indicator_TRIX.trix().values
+        
+    def __cal_VI(self) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates the Vortex Indicator (VI) which consists of two oscillators 
+            that capture positive and negative trend movement. A bullish signal 
+            triggers when the positive trend indicator crosses above the negative 
+            trend indicator or a key level. It is calculated over "col_high", 
+            "col_low" and "col_close", and "VI_window" passed as parameter and 
+            creates corresponding "VI_"+VI_window columns in the data-frame 
+            passed as argument.
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close]].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["high","low","close"]
+        
+        # Initialize Vortex Indicator
+        indicator_VI = VortexIndicator(high = df_wrk["high"], low = df_wrk["low"], 
+                                     close=df_wrk["close"], window = self.__VI_win )
+        field_nm = f'w({self.__VI_win:02d})'
+        self.__data[self.__ticker+"VI_"+field_nm] = indicator_VI.vortex_indicator_diff().values   
+        self.__data[self.__ticker+"VIN_"+field_nm] = indicator_VI.vortex_indicator_neg().values   
+        self.__data[self.__ticker+"VIP_"+field_nm] = indicator_VI.vortex_indicator_pos().values   
+
+    def __cal_WMA(self) -> None:
+        """
+        Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
+            https://github.com/bukosabino/ta/blob/master/docs/index.rst
+        
+        Calculates WMA - Weighted Moving Average. It is calculated over "CLOSE" 
+            prices passed in "col_close", "WMA_win" creating new columns named 
+            "WMA_"+WMA_win in the data-frame passed  as argument. 
+            For compatibility purposes, it was added the ticker label in front 
+            of all columns created.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+
+        Returns:
+            None.
+
+        """
+        values = self.__data[self.__col_close].values
+        df_wrk = pd.DataFrame(values)
+        df_wrk.columns = ["close"]
+        
+        # Initialize Stochastic RSI Indicator
+        indicator_WMA = WMAIndicator(close=df_wrk["close"], window = self.__WMA_win )
+
+        field_nm = f'w({self.__WMA_win:02d})'
+        self.__data[self.__ticker+"WMA_"+field_nm] = indicator_WMA.wma().values
+        
     #========================================================================================
     def calculate_indicators (self):
         """
@@ -1489,56 +1706,48 @@ class Indicators(BaseEstimator, TransformerMixin):
             None.
 
         """
-        self.__cal_return(self.__ticker+"CLOSE")
-        self.__cal_log_return(self.__ticker+"CLOSE")
-        self.__cal_price_change(self.__ticker+"CLOSE")
-        self.__cal_pct_change(self.__ticker+"CLOSE")
-        self.__cal_RA(5, 10, self.__ticker+"CLOSE")
-        self.__cal_Diff(self.__ticker+"OPEN",
-                      self.__ticker+"HIGHT", 
-                      self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE" )
-        self.__cal_MA(5, 10, self.__ticker+"CLOSE")
-        self.__cal_VMA(5, 10, 20, self.__ticker+"VOLUME")
-        self.__cal_KAMA(self.__ticker+"CLOSE")
-        self.__cal_PPO(self.__ticker+"CLOSE")
-        self.__cal_PVO(self.__ticker+"VOLUME")
-        self.__cal_ROC(self.__ticker+"CLOSE")
-        self.__cal_RSI(self.__ticker+"CLOSE")
-        self.__cal_StochRSI(self.__ticker+"CLOSE")
-        self.__cal_SO(self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE" )
-        self.__cal_AOI(self.__ticker+"HIGHT", self.__ticker+"LOW")
-        self.__cal_TSI(self.__ticker+"CLOSE")
-        self.__cal_UO(self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE" )
-        self.__cal_WRI(self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE" )
-        self.__cal_ADI(self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
-        self.__cal_CMF(self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
-        self.__cal_EOM(self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                     self.__ticker+"VOLUME"  )
-        self.__cal_FI(self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
-        self.__cal_MFI(self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
-        self.__cal_NVI(self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
-        self.__cal_OBV(self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
-        self.__cal_VPT(self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
-        self.__cal_VWAP(self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE", self.__ticker+"VOLUME"  )
-        self.__cal_ADX(self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE" )
-        self.__cal_Aroon( self.__ticker+"CLOSE" )
-        self.__cal_CCI(self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE" )
-        self.__cal_DPO( self.__ticker+"CLOSE" )
-        self.__cal_EMA( self.__ticker+"CLOSE" )
-        self.__cal_Ichimoku(self.__ticker+"HIGHT", self.__ticker+"LOW" )
-        self.__cal_KST( self.__ticker+"CLOSE" )
-        self.__cal_MACD( self.__ticker+"CLOSE" )
-
+        self.__cal_return()
+        self.__cal_log_return()
+        self.__cal_price_change()
+        self.__cal_pct_change()
+        self.__cal_RA(5, 10)
+        self.__cal_Diff()
+        self.__cal_MA(5, 10)
+        self.__cal_VMA(5, 10, 20)
+        self.__cal_KAMA()
+        self.__cal_PPO()
+        self.__cal_PVO()
+        self.__cal_ROC()
+        self.__cal_RSI()
+        self.__cal_StochRSI()
+        self.__cal_SO()
+        self.__cal_AOI()
+        self.__cal_TSI()
+        self.__cal_UO()
+        self.__cal_WRI()
+        self.__cal_ADI()
+        self.__cal_CMF()
+        self.__cal_EOM()
+        self.__cal_FI()
+        self.__cal_MFI()
+        self.__cal_NVI()
+        self.__cal_OBV()
+        self.__cal_VPT()
+        self.__cal_VWAP()
+        self.__cal_ADX()
+        self.__cal_Aroon()
+        self.__cal_CCI()
+        self.__cal_DPO()
+        self.__cal_EMA()
+        self.__cal_Ichimoku()
+        self.__cal_KST()
+        self.__cal_MACD()
+        self.__cal_MI()
+        self.__cal_PSAR()
+        self.__cal_STC()
+        self.__cal_TRIX()
+        self.__cal_VI()
+        self.__cal_WMA()
 
     def normalize_data(self):
         """
@@ -1554,26 +1763,9 @@ class Indicators(BaseEstimator, TransformerMixin):
             None.
 
         """
-        self.__data[self.__ticker+"N_OPEN"] = self.__scale_data(self.__ticker+"OPEN")
-        self.__data[self.__ticker+"N_HIGHT"] = self.__scale_data(self.__ticker+"HIGHT")
-        self.__data[self.__ticker+"N_LOW"] = self.__scale_data(self.__ticker+"LOW")
-        self.__data[self.__ticker+"N_CLOSE"] = self.__scale_data(self.__ticker+"CLOSE")
-        self.__data[self.__ticker+"N_VW"] = self.__scale_data(self.__ticker+"VW")
-        self.__data[self.__ticker+"N_VOLUME"] = self.__scale_data(self.__ticker+"VOLUME")
-        
-        self.__data[self.__ticker+"N_CLOSE_returns"] = self.__scale_data(self.__ticker+"CLOSE_returns")
-        self.__data[self.__ticker+"N_CLOSE_log_returns"] = self.__scale_data(self.__ticker+"CLOSE_log_returns")
-        self.__data[self.__ticker+"N_CLOSE_price_change"] = self.__scale_data(self.__ticker+"CLOSE_price_change")
-        self.__data[self.__ticker+"N_CLOSE_pct_change"] = self.__scale_data(self.__ticker+"CLOSE_pct_change")
-        self.__data[self.__ticker+"N_RA_5"] = self.__scale_data(self.__ticker+"RA_5")
-        self.__data[self.__ticker+"N_RA_10"] = self.__scale_data(self.__ticker+"RA_10")
-        self.__data[self.__ticker+"N_AMPL"] = self.__scale_data(self.__ticker+"AMPL")
-        self.__data[self.__ticker+"N_OPNCLS"] = self.__scale_data(self.__ticker+"OPNCLS")
-        self.__data[self.__ticker+"N_MA_5"] = self.__scale_data(self.__ticker+"MA_5")
-        self.__data[self.__ticker+"N_MA_10"] = self.__scale_data(self.__ticker+"MA_10")
-        self.__data[self.__ticker+"N_V_MA_5"] = self.__scale_data(self.__ticker+"V_MA_5")
-        self.__data[self.__ticker+"N_V_MA_10"] = self.__scale_data(self.__ticker+"V_MA_10")
-        self.__data[self.__ticker+"N_V_MA_20"] = self.__scale_data(self.__ticker+"V_MA_20")
+        col_names = self.__data.columns
+        for col in col_names:
+            self.__data["N_"+col] = self.__scale_data(col)
                 
 
     def fit(self, 

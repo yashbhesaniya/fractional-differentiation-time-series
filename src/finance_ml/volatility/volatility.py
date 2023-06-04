@@ -19,6 +19,11 @@ set_config(transform_output="pandas")
 class Volatility(BaseEstimator, TransformerMixin):
     
     def __init__(self,
+                 col_open: str,
+                 col_high: str,
+                 col_low: str,
+                 col_close: str,
+                 col_volume: str,
                  ticker: str = '',
                  atr_win: int = 14,
                  bb_win: int = 20,
@@ -29,6 +34,8 @@ class Volatility(BaseEstimator, TransformerMixin):
                  kc_win_atr: int = 10,
                  kc_mult: int = 2,
                  ui_win: int = 14,
+                 window: int = 30,
+                 trading_periods: int = 252,
                  ):
         """
         Initialize data.
@@ -38,13 +45,43 @@ class Volatility(BaseEstimator, TransformerMixin):
                 All entries in function __init__.        
             data (pd.DataFrame): Columns of dataframe containing the variables 
                 to be scaled.
-            bb_win (int): n period
+            col_open (str): column containing the "OPEN" data
+            col_high (str): column containing the "HIGH" data
+            col_low (str): column containing the "LOW" data
+            col_close (str): column containing the "CLOSE" data
+            col_volume (str): column containing the "VOLUME" data
+            ticker (str): ticker of the stock
+            atr_win (int): n ATR period
+            bb_win (int): n period for Bollinger-Bands indicator
             bb_dev (int): n factor standard deviation
+            dc_win (int): n period for Donchia-Channel indicator
+            dc_off (int): offset for Donchia-Channel indicator
+            kc_win (int): n period of Keltner-Channel indicator
+            kc_win_atr (int): n ATR period. Only valid if original_version param is False.
+            kc_mult (int): multiplier for Keltner-Channel indicator
+            ui_win (int): n period of Ulcer Index
+            window (int): no. of days for rolling prices
+            trading_periods (int): no. of trading periods
 
         Returns:
             None
 
         """
+        if (type(col_open) != str):
+            raise ValueError('Volatility Class - Parameter col_open must be a valid str')
+
+        if (type(col_high) != str):
+            raise ValueError('Volatility Class - Parameter col_high must be a valid str')
+
+        if (type(col_low) != str):
+            raise ValueError('Volatility Class - Parameter col_low must be a valid str')
+
+        if (type(col_close) != str):
+            raise ValueError('Volatility Class - Parameter col_close must be a valid str')
+
+        if (type(col_volume) != str):
+            raise ValueError('Volatility Class - Parameter col_volume must be a valid str')
+
         if (type(atr_win) != int) | (atr_win <= 0):
             raise ValueError('Volatility Class - Parameter atr_win must be int, positive')
 
@@ -72,7 +109,18 @@ class Volatility(BaseEstimator, TransformerMixin):
         if (type(ui_win) != int) | (ui_win <= 0):
             raise ValueError('Volatility Class - Parameter ui_win must be int, positive')
 
+        if (type(window) != int) | (window <= 0):
+            raise ValueError('Volatility Class - Parameter window must be int, positive')
+
+        if (type(trading_periods) != int) | (trading_periods <= 0) | (trading_periods <= window):
+            raise ValueError('Volatility Class - Parameter trading_periods must be int, positive, greater than window')
+            
         self.__ticker = (ticker+'_' if ticker!='' else '')
+        self.__col_open = self.__ticker + col_open
+        self.__col_high = self.__ticker + col_high
+        self.__col_low = self.__ticker + col_low
+        self.__col_close = self.__ticker + col_close
+        self.__col_volume = self.__ticker + col_volume
         self.__atr_win = atr_win
         self.__bb_win = bb_win
         self.__bb_dev = bb_dev
@@ -82,6 +130,8 @@ class Volatility(BaseEstimator, TransformerMixin):
         self.__kc_win_atr = kc_win_atr
         self.__kc_mult = kc_mult
         self.__ui_win = ui_win
+        self.__window = window
+        self.__trading_periods = trading_periods
 
     @property
     def data(self):
@@ -91,9 +141,7 @@ class Volatility(BaseEstimator, TransformerMixin):
     def ticker(self):
         return self.__ticker
 
-    def __getBeta(self, 
-                  col_high: str,
-                  col_low: str,
+    def __getBeta(self,
                   sl: int) -> pd.Series(dtype=float):
         """
         Calculates Beta, a measure of a stock's volatility in relation to the 
@@ -102,24 +150,20 @@ class Volatility(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
             sl (int): no. of days for rolling prices
 
         Returns:
             (pd.Series): Beta values
 
         """
-        hl = self.__data[[col_high,col_low]].values
+        hl = self.__data[[self.__col_high,self.__col_low]].values
         hl = np.log(hl[:,0] / hl[:,1])**2
         hl = pd.Series(hl,index = self.__data.index)
         beta = hl.rolling(window = 2).sum()
         beta = beta.rolling(window = sl).mean()
         return beta # beta.dropna()
     
-    def __getGamma(self,
-                   col_high: str,
-                   col_low: str    ) -> pd.Series(dtype=float):
+    def __getGamma(self) -> pd.Series(dtype=float):
         """
         Calculates Gamma, the rate of change for an option's delta based on a 
             single-point move in the delta's price. It is a second-order risk 
@@ -130,15 +174,13 @@ class Volatility(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
 
         Returns:
             (pd.Series): Gamma values
 
         """
-        h2 = self.__data[col_high].rolling(window = 2).max()
-        l2 = self.__data[col_low].rolling(window = 2).min()
+        h2 = self.__data[self.__col_high].rolling(window = 2).max()
+        l2 = self.__data[self.__col_low].rolling(window = 2).min()
         gamma = np.log(h2.values / l2.values)**2
         gamma = pd.Series(gamma, index = h2.index)
         return gamma # gamma.dropna()
@@ -194,8 +236,7 @@ class Volatility(BaseEstimator, TransformerMixin):
         return sigma
     
     #------------------------ TECHNICAL INDICATORS -----------------------------
-    def cal_BollingerBands(self,
-               col_close: str ) -> None:
+    def cal_BollingerBands(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -209,13 +250,12 @@ class Volatility(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[col_close].values
+        values = self.__data[self.__col_close].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
@@ -223,26 +263,24 @@ class Volatility(BaseEstimator, TransformerMixin):
         indicator_bb = BollingerBands(close=df_wrk["close"], window=self.__bb_win, window_dev=self.__bb_dev)
         
         # Add Bollinger Bands features
-        self.__data[self.__ticker+"BBM_"+str(self.__bb_win)] = indicator_bb.bollinger_mavg().values
-        self.__data[self.__ticker+"BBH_"+str(self.__bb_win)] = indicator_bb.bollinger_hband().values
-        self.__data[self.__ticker+"BBL_"+str(self.__bb_win)] = indicator_bb.bollinger_lband().values
+        field_nm = f'w({self.__bb_win:02d})'
+        self.__data[self.__ticker+"BBM_"+field_nm] = indicator_bb.bollinger_mavg().values
+        self.__data[self.__ticker+"BBH_"+field_nm] = indicator_bb.bollinger_hband().values
+        self.__data[self.__ticker+"BBL_"+field_nm] = indicator_bb.bollinger_lband().values
         
         # Add Bollinger Band high indicator
-        self.__data[self.__ticker+"BBHI_"+str(self.__bb_win)] = indicator_bb.bollinger_hband_indicator().values
+        self.__data[self.__ticker+"BBHI_"+field_nm] = indicator_bb.bollinger_hband_indicator().values
         
         # Add Bollinger Band low indicator
-        self.__data[self.__ticker+"BBLI_"+str(self.__bb_win)] = indicator_bb.bollinger_lband_indicator().values
+        self.__data[self.__ticker+"BBLI_"+field_nm] = indicator_bb.bollinger_lband_indicator().values
         
         # Add Width Size Bollinger Bands
-        self.__data[self.__ticker+"BBW_"+str(self.__bb_win)] = indicator_bb.bollinger_wband().values
+        self.__data[self.__ticker+"BBW_"+field_nm] = indicator_bb.bollinger_wband().values
         
         # Add Percentage Bollinger Bands
-        self.__data[self.__ticker+"BBP_"+str(self.__bb_win)] = indicator_bb.bollinger_pband().values
+        self.__data[self.__ticker+"BBP_"+field_nm] = indicator_bb.bollinger_pband().values
     
-    def cal_ATR(self,
-                col_high: str,
-                col_low: str,
-                col_close: str ) -> None:
+    def cal_ATR(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -255,27 +293,22 @@ class Volatility(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_close]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close"]
         indicator_atr = AverageTrueRange(high = df_wrk["high"], low = df_wrk["low"], 
                                          close = df_wrk["close"], window = self.__atr_win)
         
         # Add ATR features
-        self.__data[self.__ticker+"ATR_"+str(self.__atr_win)] = indicator_atr.average_true_range().values  
+        field_nm = f'w({self.__atr_win:02d})'
+        self.__data[self.__ticker+"ATR_"+field_nm] = indicator_atr.average_true_range().values  
     
-    def cal_DonchianChannel(self,
-                col_high: str,
-                col_low: str,
-                col_close: str ) -> None:
+    def cal_DonchianChannel(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -288,32 +321,27 @@ class Volatility(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_close]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close"]
         indicator_dc = DonchianChannel(high = df_wrk["high"], low = df_wrk["low"], 
                                          close = df_wrk["close"], window = self.__dc_win)
         
         # Add Donchian Channel Bands features
-        self.__data[self.__ticker+"DCM_"+str(self.__dc_win)] = indicator_dc.donchian_channel_mband().values
-        self.__data[self.__ticker+"DCH_"+str(self.__dc_win)] = indicator_dc.donchian_channel_hband().values
-        self.__data[self.__ticker+"DCL_"+str(self.__dc_win)] = indicator_dc.donchian_channel_lband().values
+        field_nm = f'w({self.__dc_win:02d})'
+        self.__data[self.__ticker+"DCM_"+field_nm] = indicator_dc.donchian_channel_mband().values
+        self.__data[self.__ticker+"DCH_"+field_nm] = indicator_dc.donchian_channel_hband().values
+        self.__data[self.__ticker+"DCL_"+field_nm] = indicator_dc.donchian_channel_lband().values
         
         # Add Width Size of Donchian Channel Bands
-        self.__data[self.__ticker+"DCW_"+str(self.__dc_win)] = indicator_dc.donchian_channel_wband().values
+        self.__data[self.__ticker+"DCW_"+field_nm] = indicator_dc.donchian_channel_wband().values
 
-    def cal_KeltnerChannel(self,
-                col_high: str,
-                col_low: str,
-                col_close: str ) -> None:
+    def cal_KeltnerChannel(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -326,15 +354,12 @@ class Volatility(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[[col_high,col_low,col_close]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close]].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["high","low","close"]
         indicator_kc = KeltnerChannel(high = df_wrk["high"], low = df_wrk["low"], 
@@ -343,20 +368,20 @@ class Volatility(BaseEstimator, TransformerMixin):
                                          multiplier = self.__kc_mult)
         
         # Add Keltner Channel Bands features
-        self.__data[self.__ticker+"KCH_"+str(self.__kc_win)] = indicator_kc.keltner_channel_hband().values
-        self.__data[self.__ticker+"KCHI_"+str(self.__kc_win)] = indicator_kc.keltner_channel_hband_indicator().values
-        self.__data[self.__ticker+"KCL_"+str(self.__kc_win)] = indicator_kc.keltner_channel_lband().values
-        self.__data[self.__ticker+"KCLI_"+str(self.__kc_win)] = indicator_kc.keltner_channel_lband_indicator().values
-        self.__data[self.__ticker+"KCM_"+str(self.__kc_win)] = indicator_kc.keltner_channel_mband().values
+        field_nm = f'w({self.__kc_win:02d})wa({self.__kc_win_atr:02d})m({self.__kc_mult:02d})'
+        self.__data[self.__ticker+"KCH_"+field_nm] = indicator_kc.keltner_channel_hband().values
+        self.__data[self.__ticker+"KCHI_"+field_nm] = indicator_kc.keltner_channel_hband_indicator().values
+        self.__data[self.__ticker+"KCL_"+field_nm] = indicator_kc.keltner_channel_lband().values
+        self.__data[self.__ticker+"KCLI_"+field_nm] = indicator_kc.keltner_channel_lband_indicator().values
+        self.__data[self.__ticker+"KCM_"+field_nm] = indicator_kc.keltner_channel_mband().values
 
         # Add Keltner Channel Percentage Band
         # self.__data[self.__ticker+"KCP_"+str(self.__kc_win)] = indicator_kc.keltner_channel_pband().values
         
         # Add Keltner Channel Band Width
-        self.__data[self.__ticker+"KCW_"+str(self.__kc_win)] = indicator_kc.keltner_channel_wband().values
+        self.__data[self.__ticker+"KCW_"+field_nm] = indicator_kc.keltner_channel_wband().values
 
-    def cal_UlcerIndex(self,
-               col_close: str ) -> None:
+    def cal_UlcerIndex(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -370,13 +395,12 @@ class Volatility(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
 
         Returns:
             None.
 
         """
-        values = self.__data[col_close].values
+        values = self.__data[self.__col_close].values
         df_wrk = pd.DataFrame(values)
         df_wrk.columns = ["close"]
         
@@ -384,13 +408,12 @@ class Volatility(BaseEstimator, TransformerMixin):
         indicator_ui = UlcerIndex(close=df_wrk["close"], window=self.__ui_win)
         
         # Add Ulcer Index indicator
-        self.__data[self.__ticker+"UI_"+str(self.__ui_win)] = indicator_ui.ulcer_index().values
+        field_nm = f'w({self.__ui_win:02d})'
+        self.__data[self.__ticker+"UI_"+field_nm] = indicator_ui.ulcer_index().values
            
     #------------------------------------------------------------------------------------
     # IMPLEMENTATION OF THE CORWIN-SCHULTZ Algorithm
-    def cal_CorwinSchultz(self, 
-                      col_high: str,
-                      col_low: str,
+    def cal_CorwinSchultz(self,
                       sl: int = 1):
         """
         Adapted from Chap. 2 of  "Volatility Trading", by
@@ -402,8 +425,6 @@ class Volatility(BaseEstimator, TransformerMixin):
             self: object
                 All entries in function __init__.        
             series (pd.Series): Series of data prices
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
             sl (int): no. of days for rolling prices
 
         Returns:
@@ -411,22 +432,17 @@ class Volatility(BaseEstimator, TransformerMixin):
 
         """
         # Note: S<0 iif alpha<0
-        beta = self.__getBeta(col_high, col_low, sl)
-        gamma = self.__getGamma(col_high, col_low)
+        beta = self.__getBeta(sl)
+        gamma = self.__getGamma()
         alpha = self.__getAlpha(beta, gamma)
         spread = 2 * (np.exp(alpha) - 1) / (1 + np.exp(alpha))
         startTime = pd.Series(self.__data.index[0:spread.shape[0]], index = spread.index)
         spread = pd.concat([spread,startTime], axis = 1)
         spread.columns = ['Spread','Start_Time'] # 1st loc used to compute beta
-        self.__data[self.__ticker+'CorwinSchultz'] = spread['Spread'].values
+        field_nm = f'sl({sl:02d})'
+        self.__data[self.__ticker+'CorwinSchultz_'+field_nm] = spread['Spread'].values
     
     def cal_GarmanKlass(self,
-                        col_open: str,
-                        col_high: str,
-                        col_low: str,
-                        col_close: str,
-                        window: int = 30, 
-                        trading_periods: int = 252, 
                         clean:bool = False):
     
         """
@@ -439,40 +455,29 @@ class Volatility(BaseEstimator, TransformerMixin):
             self: object
                 All entries in function __init__.        
             price_data (pd.DataFrame): DataFrame containing stock data
-            col_open (str): name of the column with the "OPEN" data prices
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
-            window (int): no. of days for rolling prices
-            trading_periods (int): no. of trading periods
             clean (bool): if 'True', removes 'NaN's; otherwise don't remove
 
         Returns:
             None.
 
         """
-        log_hl = (self.__data[col_high] / self.__data[col_low]).apply(np.log)
-        log_co = (self.__data[col_close] / self.__data[col_open]).apply(np.log)
+        log_hl = (self.__data[self.__col_high] / self.__data[self.__col_low]).apply(np.log)
+        log_co = (self.__data[self.__col_close] / self.__data[self.__col_open]).apply(np.log)
     
         rs = 0.5 * log_hl **2 - (2 * math.log(2) - 1) * log_co **2
         
         def f(v):
-            return (trading_periods * v.mean()) **0.5
+            return (self.__trading_periods * v.mean()) **0.5
         
-        result = rs.rolling(window = window, center = False).apply(func=f)
+        result = rs.rolling(window = self.__window, center = False).apply(func=f)
         
+        field_nm = f'w({self.__window:02d}tp({self.__trading_periods:03d}))'
         if clean:
-            self.__data[self.__ticker+'GarmanKlass'] = result.dropna().values
+            self.__data[self.__ticker+'GarmanKlass_'+field_nm] = result.dropna().values
         else:
-            self.__data[self.__ticker+'GarmanKlass'] = result.values
+            self.__data[self.__ticker+'GarmanKlass_'+field_nm] = result.values
         
-    def cal_RogersSatchell(self, 
-                           col_open: str,
-                           col_high: str,
-                           col_low: str,
-                           col_close: str,
-                           window: int = 30, 
-                           trading_periods: int = 252, 
+    def cal_RogersSatchell(self,
                            clean:bool = False):
         
         """
@@ -485,41 +490,30 @@ class Volatility(BaseEstimator, TransformerMixin):
             self: object
                 All entries in function __init__.        
             price_data (pd.DataFrame): DataFrame containing stock data
-            col_open (str): name of the column with the "OPEN" data prices
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
-            window (int): no. of days for rolling prices
-            trading_periods (int): no. of trading periods
             clean (bool): if 'True', removes 'NaN's; otherwise don't remove
 
         Returns:
             None.
 
         """
-        log_ho = (self.__data[col_high] / self.__data[col_open]).apply(np.log)
-        log_lo = (self.__data[col_low] / self.__data[col_open]).apply(np.log)
-        log_co = (self.__data[col_close] / self.__data[col_open]).apply(np.log)
+        log_ho = (self.__data[self.__col_high] / self.__data[self.__col_open]).apply(np.log)
+        log_lo = (self.__data[self.__col_low] / self.__data[self.__col_open]).apply(np.log)
+        log_co = (self.__data[self.__col_close] / self.__data[self.__col_open]).apply(np.log)
         
         rs = log_ho * (log_ho - log_co) + log_lo * (log_lo - log_co)
     
         def f(v):
-            return trading_periods * v.mean()**0.5
+            return self.__trading_periods * v.mean()**0.5
         
-        result = rs.rolling(window = window, center = False).apply(func=f)
+        result = rs.rolling(window = self.__window, center = False).apply(func=f)
         
+        field_nm = f'w({self.__window:02d}tp({self.__trading_periods:03d}))'
         if clean:
-            self.__data[self.__ticker+'RogersSatchell'] = result.dropna().values
+            self.__data[self.__ticker+'RogersSatchell_'+field_nm] = result.dropna().values
         else:
-            self.__data[self.__ticker+'RogersSatchell'] = result.values
+            self.__data[self.__ticker+'RogersSatchell_'+field_nm] = result.values
         
-    def cal_YangZhang(self, 
-                      col_open: str,
-                      col_high: str,
-                      col_low: str,
-                      col_close: str,
-                      window: int = 30, 
-                      trading_periods:int = 252, 
+    def cal_YangZhang(self,
                       clean:bool = False):
     
         """
@@ -532,46 +526,38 @@ class Volatility(BaseEstimator, TransformerMixin):
             self: object
                 All entries in function __init__.        
             price_data (pd.DataFrame): DataFrame containing stock data
-            col_open (str): name of the column with the "OPEN" data prices
-            col_high (str): name of the column with the "HIGH" data prices
-            col_low (str): name of the column with the "LOW" data prices
-            col_close (str): name of the column with the "CLOSE" data prices
-            window (int): no. of days for rolling prices
-            trading_periods (int): no. of trading periods
             clean (bool): if 'True', removes 'NaN's; otherwise don't remove
 
         Returns:
             None.
 
         """
-        log_ho = (self.__data[col_high] / self.__data[col_open]).apply(np.log)
-        log_lo = (self.__data[col_low] / self.__data[col_open]).apply(np.log)
-        log_co = (self.__data[col_close] / self.__data[col_open]).apply(np.log)
+        log_ho = (self.__data[self.__col_high] / self.__data[self.__col_open]).apply(np.log)
+        log_lo = (self.__data[self.__col_low] / self.__data[self.__col_open]).apply(np.log)
+        log_co = (self.__data[self.__col_close] / self.__data[self.__col_open]).apply(np.log)
         
-        log_oc = (self.__data[col_open] / self.__data[col_close].shift(1)).apply(np.log)
+        log_oc = (self.__data[self.__col_open] / self.__data[self.__col_close].shift(1)).apply(np.log)
         log_oc_sq = log_oc **2
         
-        log_cc = (self.__data[col_close] / self.__data[col_close].shift(1)).apply(np.log)
+        log_cc = (self.__data[self.__col_close] / self.__data[self.__col_close].shift(1)).apply(np.log)
         log_cc_sq = log_cc **2
         
         rs = log_ho * (log_ho - log_co) + log_lo * (log_lo - log_co)
         
-        close_vol = log_cc_sq.rolling(window = window, center = False).sum() * (1.0 / (window - 1.0))
-        open_vol = log_oc_sq.rolling(window = window, center = False).sum() * (1.0 / (window - 1.0))
-        window_rs = rs.rolling(window = window, center = False).sum() * (1.0 / (window - 1.0))
+        close_vol = log_cc_sq.rolling(window = self.__window, center = False).sum() * (1.0 / (self.__window - 1.0))
+        open_vol = log_oc_sq.rolling(window = self.__window, center = False).sum() * (1.0 / (self.__window - 1.0))
+        window_rs = rs.rolling(window = self.__window, center = False).sum() * (1.0 / (self.__window - 1.0))
     
-        k = 0.34 / (1 + (window + 1) / (window - 1))
-        result = (open_vol + k * close_vol + (1 - k) * window_rs).apply(np.sqrt) * math.sqrt(trading_periods)
+        k = 0.34 / (1 + (self.__window + 1) / (self.__window - 1))
+        result = (open_vol + k * close_vol + (1 - k) * window_rs).apply(np.sqrt) * math.sqrt(self.__trading_periods)
     
+        field_nm = f'w({self.__window:02d}tp({self.__trading_periods:03d}))'
         if clean:
-            self.__data[self.__ticker+'YangZhang'] = result.dropna().values
+            self.__data[self.__ticker+'YangZhang_'+field_nm] = result.dropna().values
         else:
-            self.__data[self.__ticker+'YangZhang'] = result.values
+            self.__data[self.__ticker+'YangZhang_'+field_nm] = result.values
         
-    def cal_HodgesTompkins(self, 
-                           col_close: str,
-                           window: int = 30, 
-                           trading_periods: int = 252, 
+    def cal_HodgesTompkins(self,
                            clean:bool = False):
         
         """
@@ -584,30 +570,28 @@ class Volatility(BaseEstimator, TransformerMixin):
             self: object
                 All entries in function __init__.        
             price_data (pd.DataFrame): DataFrame containing stock data
-            col_close (str): name of the column with the "CLOSE" data prices
-            window (int): no. of days for rolling prices
-            trading_periods (int): no. of trading periods
             clean (bool): if 'True', removes 'NaN's; otherwise don't remove
 
         Returns:
             None.
 
         """
-        log_return = (self.__data[col_close] / self.__data[col_close].shift(1)).apply(np.log)
+        log_return = (self.__data[self.__col_close] / self.__data[self.__col_close].shift(1)).apply(np.log)
     
-        vol = log_return.rolling(window = window, center = False).std() * math.sqrt(trading_periods)
+        vol = log_return.rolling(window = self.__window, center = False).std() * math.sqrt(self.__trading_periods)
     
-        h = window
+        h = self.__window
         n = (log_return.count() - h) + 1
     
         adj_factor = 1.0 / (1.0 - (h / n) + ((h**2 - 1) / (3 * n**2)))
     
         result = vol * adj_factor
     
+        field_nm = f'w({self.__window:02d}tp({self.__trading_periods:03d}))'
         if clean:
-            self.__data[self.__ticker+'HodgesTompkins'] = result.dropna().values
+            self.__data[self.__ticker+'HodgesTompkins_'+field_nm] = result.dropna().values
         else:
-            self.__data[self.__ticker+'HodgesTompkins'] = result.values
+            self.__data[self.__ticker+'HodgesTompkins_'+field_nm] = result.values
         
 
     def calculate_volatilities (self):
@@ -625,24 +609,18 @@ class Volatility(BaseEstimator, TransformerMixin):
 
         """
         # Calculate Technical Indicators
-        self.cal_BollingerBands (self.__ticker+"CLOSE")
-        self.cal_ATR (self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE" )
-        self.cal_DonchianChannel (self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE" )
-        self.cal_KeltnerChannel (self.__ticker+"HIGHT", self.__ticker+"LOW", 
-                      self.__ticker+"CLOSE" )
-        self.cal_UlcerIndex (self.__ticker+"CLOSE")
+        self.cal_BollingerBands ()
+        self.cal_ATR()
+        self.cal_DonchianChannel ()
+        self.cal_KeltnerChannel ()
+        self.cal_UlcerIndex ()
         
         # Calculate Volatility Indicators
-        self.cal_CorwinSchultz(self.__ticker+'HIGHT', self.__ticker+'LOW')
-        self.cal_HodgesTompkins(self.__ticker+"CLOSE" )
-        self.cal_YangZhang(self.__ticker+"OPEN", self.__ticker+"HIGHT", 
-                           self.__ticker+"LOW", self.__ticker+"CLOSE" )
-        self.cal_RogersSatchell(self.__ticker+"OPEN", self.__ticker+"HIGHT", 
-                                self.__ticker+"LOW", self.__ticker+"CLOSE" )
-        self.cal_GarmanKlass(self.__ticker+"OPEN", self.__ticker+"HIGHT", 
-                             self.__ticker+"LOW", self.__ticker+"CLOSE" )
+        self.cal_CorwinSchultz()
+        self.cal_HodgesTompkins()
+        self.cal_YangZhang()
+        self.cal_RogersSatchell()
+        self.cal_GarmanKlass()
         
     def fit(self, 
             X: pd.DataFrame(dtype=float), 
