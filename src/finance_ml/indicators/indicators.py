@@ -27,12 +27,14 @@ set_config(transform_output="pandas")
 class Indicators(BaseEstimator, TransformerMixin):
     
     def __init__(self,
-                 col_open: str,
-                 col_high: str,
-                 col_low: str,
-                 col_close: str,
-                 col_volume: str,
+                 col_open: str = 'OPEN',
+                 col_high: str = 'HIGHT',
+                 col_low: str = 'LOW',
+                 col_close: str = 'CLOSE',
+                 col_volume: str = 'VOLUME',
                  ticker: str = '',
+                 calc_all: bool = True,
+                 list_ind: list = [],
                  norm_data: bool = False,
                  scale_method: str = "minmax",
                  KAMA_win: int = 10,
@@ -117,79 +119,99 @@ class Indicators(BaseEstimator, TransformerMixin):
             col_close (str): column containing the "CLOSE" data
             col_volume (str): column containing the "VOLUME" data
             ticker (str): ticker of the stock
+            calc_all (bool): if True, calc all indicators
+            list_ind (list): list of indicators do calculate if calc_all is False
             norm_data (bool): indicate to normalize data after calculating indicators
             scale_method (str): indicates the method for scaling (minmax, standard)
-            KAMA_win (int):
-            KAMA_pow1 (int): 
-            KAMA_pow2 (int):
-            PPO_win_slow (int):
-            PPO_win_fast (int):
-            PPO_win_sign (int):
-            PVO_win_slow (int):
-            PVO_win_fast (int):
-            PVO_win_sign (int):
-            ROC_win (int):
-            RSI_win (int):
-            StRSI_win (int):
-            StRSI_sm1 (int):
-            StRSI_sm2 (int):
-            SO_win (int):
-            SO_sm (int):
-            AOI_win1 (int):
-            AOI_win2 (int):
-            TSI_win_slow (int):
-            TSI_win_fast (int):
-            UO_win1 (int):
-            UO_win2 (int):
-            UO_win3 (int):
-            UO_weight1 (float):
-            UO_weight2 (float):
-            UO_weight3 (float):
-            WRI_lbp (int):
-            CMF_win (int):
-            EOM_win (int):
-            FI_win (int):
-            MFI_win (int):
-            VWAP_win (int):
-            ADX_win (int):
-            AROON_win (int):
-            CCI_win (int):
-            CCI_const (float):
-            DPO_win (int):
-            EMA_win (int):
-            ICHI_win1 (int):
-            ICHI_win2 (int):
-            ICHI_win3 (int):
-            ICHI_visual (bool):
-            KST_roc1 (int):
-            KST_roc2 (int):
-            KST_roc3 (int):
-            KST_roc4 (int):
-            KST_win1 (int):
-            KST_win2 (int):
-            KST_win3 (int):
-            KST_win4 (int):
-            KST_nsig (int):
-            MACD_win_slow (int):
-            MACD_win_fast (int):
-            MACD_win_sign (int):                 
-            MI_win_fast (int):
-            MI_win_slow (int):                 
-            PSAR_step (float):
-            PSAR_max_step (float):                 
-            STC_win_slow (int):
-            STC_win_fast (int):
-            STC_cycle (int):
-            STC_sm1 (int):
-            STC_sm2 (int):
-            TRIX_win (int):
-            VI_win (int):
-            WMA_win (int):
+            KAMA_win (int): n period for Kaufman's Adaptative Moving Average
+            KAMA_pow1 (int): number of periods for the fastest EMA constant
+            KAMA_pow2 (int): number of periods for the slowest EMA constant
+            PPO_win_slow (int): n period long-term for Percentage Price Oscillator
+            PPO_win_fast (int): n period short-term for Percentage Price Oscillator
+            PPO_win_sign (int): n period to signal for Percentage Price Oscillator
+            PVO_win_slow (int): n period long-term for Percentage Volume Oscillator
+            PVO_win_fast (int): n period short-term for Percentage Volume Oscillator
+            PVO_win_sign (int): n period to signal for Percentage Volume Oscillator
+            ROC_win (int): n period for Rate of Change 
+            RSI_win (int): n period for Relative Strength Index
+            StRSI_win (int): n period for Stochastic RSI
+            StRSI_sm1 (int): moving average of Stochastic RSI
+            StRSI_sm2 (int): moving average of %K
+            SO_win (int): n period for Stochastic Oscillator
+            SO_sm (int): sma period over 
+            AOI_win1 (int): short period for Awesome Oscillator
+            AOI_win2 (int): long period for Awesome Oscillator
+            TSI_win_slow (int): high period of True Strength Index
+            TSI_win_fast (int): low period of True Strength Index
+            UO_win1 (int): short period of Ultimate Oscillator
+            UO_win2 (int): medium period of Ultimate Oscillator
+            UO_win3 (int): long period of Ultimate Oscillator
+            UO_weight1 (float): weight of short BP average for Ultimate Oscillator
+            UO_weight2 (float): weight of medium BP average for Ultimate Oscillator
+            UO_weight3 (float): weight of long BP average for Ultimate Oscillator
+            WRI_lbp (int): lookback period for William %R
+            CMF_win (int): n period for Chaikin Money Flow
+            EOM_win (int): n period for Ease Of Movement
+            FI_win (int): n period for Force Index
+            MFI_win (int): n period for Money Flow Index
+            VWAP_win (int): n period for Volume Weighted Average Price 
+            ADX_win (int): n period for Average Directional Movement Index
+            AROON_win (int): n period for Aroon Indicator
+            CCI_win (int): n period for Commodity Channel Index 
+            CCI_const (float): constant for Commodity Channel Index
+            DPO_win (int): n period for Detrended Price Oscillator
+            EMA_win (int): n period for EMA - Exponential Moving Average
+            ICHI_win1 (int): n1 low period for Ichimoku Kinko Hyo indicator
+            ICHI_win2 (int): n2 medium period for Ichimoku Kinko Hyo indicator
+            ICHI_win3 (int): n3 high period for Ichimoku Kinko Hyo indicator
+            ICHI_visual (bool): if True, shift n2 values
+            KST_roc1 (int): roc1 period for KST Oscillator
+            KST_roc2 (int): roc2 period for KST Oscillator
+            KST_roc3 (int): roc3 period for KST Oscillator
+            KST_roc4 (int): roc4 period for KST Oscillator
+            KST_win1 (int): n1 smoothed period for KST Oscillator
+            KST_win2 (int): n2 smoothed period for KST Oscillator
+            KST_win3 (int): n3 smoothed period for KST Oscillator
+            KST_win4 (int): n4 smoothed period for KST Oscillator
+            KST_nsig (int): n period to signal for KST Oscillator
+            MACD_win_slow (int): n period short-term for Moving Average Convergence Divergence
+            MACD_win_fast (int): n period long-term for Moving Average Convergence Divergence
+            MACD_win_sign (int): n period signal for Moving Average Convergence Divergence
+            MI_win_fast (int): fast period value for Mass index
+            MI_win_slow (int): slow period value for Mass index
+            PSAR_step (float): the Acceleration Factor used to compute the SAR
+            PSAR_max_step (float): the maximum value allowed for the Acceleration Factor
+            STC_win_slow (int): n period long-term for Schaff Trend Cycle
+            STC_win_fast (int): n period short-term for Schaff Trend Cycle
+            STC_cycle (int): cycle size for Schaff Trend Cycle
+            STC_sm1 (int): ema period over stoch_k for Shaff Trend Cycle
+            STC_sm2 (int): ema period over stoch_kd for Shaff Trend Cycle
+            TRIX_win (int): n period for Trix Indicator
+            VI_win (int): n period for Vortex Indicator
+            WMA_win (int): n period for Weighted Moving Average
 
         Returns:
             None
 
         """
+        IND_LIST = ['RET', 'LRET', 'PCHG','PCTCHG', 'RA', 'DIFF', 'MA', 'VMA', \
+                    'KAMA', 'PPO', 'PVO', 'ROC', 'RSI', 'STRSI', 'SO', 'AOI', \
+                    'TSI', 'UO', 'WRI', 'ADI', 'CMF', 'EOM', 'FI', 'MFI', 'NVI', \
+                    'OBV', 'VPT', 'VWAP', 'ADX', 'AROON', 'CCI', 'DPO', 'EMA', \
+                    'ICHI', 'KST', 'MACD', 'MI', 'PSAR', 'STC', 'TRIX', 'VI', 'WMA']
+        SCALE_METHODS = ['MINMAX', 'STANDARD']
+
+        if (type(calc_all) != bool):
+            raise ValueError('Indicators Class - Parameter calc_all must be True or False')
+        
+        if (type(list_ind) != list):
+            raise ValueError('Indicators Class - Parameter list_ind must be a list')
+            
+        list_ind = [l.upper() for l in list_ind]
+        
+        if (not set(list_ind).issubset(IND_LIST)):
+            raise ValueError(f'Indicators Class - Invalid Indicator {set(list_ind)-set(IND_LIST)}')
+        
         if (type(col_open) != str):
             raise ValueError('Indicators Class - Parameter col_open must be a valid str')
 
@@ -205,6 +227,210 @@ class Indicators(BaseEstimator, TransformerMixin):
         if (type(col_volume) != str):
             raise ValueError('Indicators Class - Parameter col_volume must be a valid str')
 
+        if (type(norm_data) != bool):
+            raise ValueError('Indicators Class - Parameter norm_data must be True or False')
+
+        if (scale_method.upper() not in SCALE_METHODS):
+            raise ValueError(f'Indicators Class - Invalid Scale Method ({scale_method})')
+
+        if (type(KAMA_win) != int) | (KAMA_win <= 0):
+            raise ValueError('Indicators Class - Parameter KAMA_win must be int, positive')
+
+        if (type(KAMA_pow1) != int) | (KAMA_pow1 <= 0):
+            raise ValueError('Indicators Class - Parameter KAMA_pow1 must be int, positive')
+
+        if (type(KAMA_pow2) != int) | (KAMA_pow2 <= 0) | (KAMA_pow2 <= KAMA_pow1):
+            raise ValueError('Indicators Class - Parameter KAMA_pow2 must be int, positive, greater than KAMA_pow1')
+
+        if (type(PPO_win_slow) != int) | (PPO_win_slow <= 0):
+            raise ValueError('Indicators Class - Parameter PPO_win_slow must be int, positive')
+
+        if (type(PPO_win_fast) != int) | (PPO_win_fast <= 0) | (PPO_win_fast >= PPO_win_slow):
+            raise ValueError('Indicators Class - Parameter PPO_win_fast must be int, positive, less than PPO_win_slow')
+
+        if (type(PPO_win_sign) != int) | (PPO_win_sign <= 0):
+            raise ValueError('Indicators Class - Parameter PPO_win_sign must be int, positive')
+
+        if (type(PVO_win_slow) != int) | (PVO_win_slow <= 0):
+            raise ValueError('Indicators Class - Parameter PVO_win_slow must be int, positive')
+
+        if (type(PVO_win_fast) != int) | (PVO_win_fast <= 0) | (PVO_win_fast >= PVO_win_slow):
+            raise ValueError('Indicators Class - Parameter PVO_win_fast must be int, positive, less than PVO_win_slow')
+
+        if (type(PVO_win_sign) != int) | (PVO_win_sign <= 0):
+            raise ValueError('Indicators Class - Parameter PVO_win_sign must be int, positive')
+
+        if (type(ROC_win) != int) | (ROC_win <= 0):
+            raise ValueError('Indicators Class - Parameter ROC_win must be int, positive')
+
+        if (type(RSI_win) != int) | (RSI_win <= 0):
+            raise ValueError('Indicators Class - Parameter RSI_win must be int, positive')
+
+        if (type(StRSI_win) != int) | (StRSI_win <= 0):
+            raise ValueError('Indicators Class - Parameter StRSI_win must be int, positive')
+
+        if (type(StRSI_sm1) != int) | (StRSI_sm1 <= 0):
+            raise ValueError('Indicators Class - Parameter StRSI_sm1 must be int, positive')
+
+        if (type(StRSI_sm2) != int) | (StRSI_sm2 <= 0):
+            raise ValueError('Indicators Class - Parameter RSI_win must be int, positive')
+
+        if (type(SO_win) != int) | (SO_win <= 0):
+            raise ValueError('Indicators Class - Parameter SO_win must be int, positive')
+
+        if (type(SO_sm) != int) | (SO_sm <= 0):
+            raise ValueError('Indicators Class - Parameter SO_sm must be int, positive')
+
+        if (type(AOI_win1) != int) | (AOI_win1 <= 0):
+            raise ValueError('Indicators Class - Parameter AOI_win1 must be int, positive')
+
+        if (type(AOI_win2) != int) | (AOI_win2 <= 0) | (AOI_win2 <= AOI_win1):
+            raise ValueError('Indicators Class - Parameter AOI_win2 must be int, positive, greater than AOI_win1')
+
+        if (type(TSI_win_slow) != int) | (TSI_win_slow <= 0):
+            raise ValueError('Indicators Class - Parameter TSI_win_slow must be int, positive')
+
+        if (type(TSI_win_fast) != int) | (TSI_win_fast <= 0) | (TSI_win_fast >= TSI_win_slow):
+            raise ValueError('Indicators Class - Parameter TSI_win_fast must be int, positive, less than TSI_win_slow')
+
+        if (type(UO_win1) != int) | (UO_win1 <= 0):
+            raise ValueError('Indicators Class - Parameter UO_win1 must be int, positive')
+
+        if (type(UO_win2) != int) | (UO_win2 <= 0) | (UO_win2 <= UO_win1):
+            raise ValueError('Indicators Class - Parameter UO_win2 must be int, positive, greater than UO_win1')
+
+        if (type(UO_win3) != int) | (UO_win3 <= 0) | (UO_win3 <= UO_win2):
+            raise ValueError('Indicators Class - Parameter UO_win3 must be int, positive, greater than UO_win2')
+
+        if (type(UO_weight1) != float) | (UO_weight1 <= 0.0):
+            raise ValueError('Indicators Class - Parameter UO_weight1 must be float, positive')
+
+        if (type(UO_weight2) != float) | (UO_weight2 <= 0.0):
+            raise ValueError('Indicators Class - Parameter UO_weight2 must be float, positive')
+
+        if (type(UO_weight3) != float) | (UO_weight3 <= 0.0):
+            raise ValueError('Indicators Class - Parameter UO_weight3 must be float, positive')
+
+        if (type(WRI_lbp) != int) | (WRI_lbp <= 0):
+            raise ValueError('Indicators Class - Parameter WRI_lbp must be int, positive')
+
+        if (type(CMF_win) != int) | (CMF_win <= 0):
+            raise ValueError('Indicators Class - Parameter CMF_win must be int, positive')
+
+        if (type(EOM_win) != int) | (EOM_win <= 0):
+            raise ValueError('Indicators Class - Parameter EOM_win must be int, positive')
+
+        if (type(FI_win) != int) | (FI_win <= 0):
+            raise ValueError('Indicators Class - Parameter FI_win must be int, positive')
+
+        if (type(MFI_win) != int) | (MFI_win <= 0):
+            raise ValueError('Indicators Class - Parameter MFI_win must be int, positive')
+
+        if (type(VWAP_win) != int) | (VWAP_win <= 0):
+            raise ValueError('Indicators Class - Parameter VWAP_win must be int, positive')
+
+        if (type(ADX_win) != int) | (ADX_win <= 0):
+            raise ValueError('Indicators Class - Parameter ADX_win must be int, positive')
+
+        if (type(AROON_win) != int) | (AROON_win <= 0):
+            raise ValueError('Indicators Class - Parameter AROON_win must be int, positive')
+
+        if (type(CCI_win) != int) | (CCI_win <= 0):
+            raise ValueError('Indicators Class - Parameter CCI_win must be int, positive')
+
+        if (type(CCI_const) != float) | (CCI_const <= 0.0):
+            raise ValueError('Indicators Class - Parameter CCI_const must be float, positive')
+
+        if (type(DPO_win) != int) | (DPO_win <= 0):
+            raise ValueError('Indicators Class - Parameter DPO_win must be int, positive')
+
+        if (type(EMA_win) != int) | (EMA_win <= 0):
+            raise ValueError('Indicators Class - Parameter EMA_win must be int, positive')
+
+        if (type(ICHI_win1) != int) | (ICHI_win1 <= 0):
+            raise ValueError('Indicators Class - Parameter ICHI_win1 must be int, positive')
+
+        if (type(ICHI_win2) != int) | (ICHI_win2 <= 0) | (ICHI_win2 <= ICHI_win1):
+            raise ValueError('Indicators Class - Parameter ICHI_win2 must be int, positive, greater than ICHI_win1')
+
+        if (type(ICHI_win3) != int) | (ICHI_win3 <= 0) | (ICHI_win3 <= ICHI_win2):
+            raise ValueError('Indicators Class - Parameter ICHI_win3 must be int, positive, greater than ICHI_win2')
+
+        if (type(ICHI_visual) != bool):
+            raise ValueError('Indicators Class - Parameter ICHI_visual must be True or False')
+
+        if (type(KST_roc1) != int) | (KST_roc1 <= 0):
+            raise ValueError('Indicators Class - Parameter KST_roc1 must be int, positive')
+
+        if (type(KST_roc2) != int) | (KST_roc2 <= 0) | (KST_roc2 <= KST_roc1):
+            raise ValueError('Indicators Class - Parameter KST_roc2 must be int, positive, greater than KST_roc1')
+
+        if (type(KST_roc3) != int) | (KST_roc3 <= 0) | (KST_roc3 <= KST_roc2):
+            raise ValueError('Indicators Class - Parameter KST_roc3 must be int, positive, greater than KST_roc2')
+
+        if (type(KST_roc4) != int) | (KST_roc4 <= 0) | (KST_roc4 <= KST_roc3):
+            raise ValueError('Indicators Class - Parameter KST_roc4 must be int, positive, greater than KST_roc3')
+
+        if (type(KST_win1) != int) | (KST_win1 <= 0):
+            raise ValueError('Indicators Class - Parameter KST_win1 must be int, positive')
+
+        if (type(KST_win2) != int) | (KST_win2 <= 0):
+            raise ValueError('Indicators Class - Parameter KST_win2 must be int, positive')
+
+        if (type(KST_win3) != int) | (KST_win3 <= 0):
+            raise ValueError('Indicators Class - Parameter KST_win3 must be int, positive')
+
+        if (type(KST_win4) != int) | (KST_win4 <= 0):
+            raise ValueError('Indicators Class - Parameter KST_win4 must be int, positive')
+
+        if (type(KST_nsig) != int) | (KST_nsig <= 0):
+            raise ValueError('Indicators Class - Parameter KST_nsig must be int, positive')
+
+        if (type(MACD_win_slow) != int) | (MACD_win_slow <= 0):
+            raise ValueError('Indicators Class - Parameter MACD_win_slow must be int, positive')
+
+        if (type(MACD_win_fast) != int) | (MACD_win_fast <= 0) | (MACD_win_fast >= MACD_win_slow):
+            raise ValueError('Indicators Class - Parameter MACD_win_fast must be int, positive, less than MACD_win_slow')
+
+        if (type(MACD_win_sign) != int) | (MACD_win_sign <= 0):
+            raise ValueError('Indicators Class - Parameter MACD_win_sign must be int, positive')
+
+        if (type(MI_win_fast) != int) | (MI_win_fast <= 0):
+            raise ValueError('Indicators Class - Parameter MI_win_fast must be int, positive')
+
+        if (type(MI_win_slow) != int) | (MI_win_slow <= 0) | (MI_win_slow <= MI_win_fast):
+            raise ValueError('Indicators Class - Parameter MI_win_slow must be int, positive, greater than MI_win_fast')
+
+        if (type(PSAR_step) != float) | (PSAR_step <= 0.0):
+            raise ValueError('Indicators Class - Parameter PSAR_step must be float, positive')
+
+        if (type(PSAR_max_step) != float) | (PSAR_max_step <= 0.0):
+            raise ValueError('Indicators Class - Parameter PSAR_max_step must be float, positive')
+
+        if (type(STC_win_slow) != int) | (STC_win_slow <= 0):
+            raise ValueError('Indicators Class - Parameter STC_win_slow must be int, positive')
+
+        if (type(STC_win_fast) != int) | (STC_win_fast <= 0) | (STC_win_fast >= STC_win_slow):
+            raise ValueError('Indicators Class - Parameter STC_win_fast must be int, positive, less than STC_win_slow')
+
+        if (type(STC_cycle) != int) | (STC_cycle <= 0):
+            raise ValueError('Indicators Class - Parameter STC_cycle must be int, positive')
+
+        if (type(STC_sm1) != int) | (STC_sm1 <= 0):
+            raise ValueError('Indicators Class - Parameter STC_sm1 must be int, positive')
+
+        if (type(STC_sm2) != int) | (STC_sm2 <= 0):
+            raise ValueError('Indicators Class - Parameter STC_sm2 must be int, positive')
+
+        if (type(TRIX_win) != int) | (TRIX_win <= 0):
+            raise ValueError('Indicators Class - Parameter TRIX_win must be int, positive')
+
+        if (type(VI_win) != int) | (VI_win <= 0):
+            raise ValueError('Indicators Class - Parameter VI_win must be int, positive')
+
+        if (type(WMA_win) != int) | (WMA_win <= 0):
+            raise ValueError('Indicators Class - Parameter WMA_win must be int, positive')
+
         self.__ticker = (ticker+'_' if ticker!='' else '')
         self.__col_open = self.__ticker + col_open
         self.__col_high = self.__ticker + col_high
@@ -213,6 +439,8 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__col_volume = self.__ticker + col_volume
         self.__norm_data = norm_data
         self.__scale_method = scale_method
+        self.__calc_all = calc_all
+        self.__list_ind = list_ind
         
         # Loading parameters for Momentum Indicators
         self.__KAMA_win = KAMA_win
@@ -287,11 +515,15 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__WMA_win = WMA_win
             
     @property
-    def data(self):
+    def data(self) -> pd.DataFrame(dtype=float):
         return self.__data
 
     @property
-    def ticker(self):
+    def norm_data(self) -> pd.DataFrame(dtype=float):
+        return self.__norm_data
+
+    @property
+    def ticker(self) -> str:
         return self.__ticker
 
     @property
@@ -633,8 +865,9 @@ class Indicators(BaseEstimator, TransformerMixin):
         
         # Initialize ROC Indicator
         indicator_ROC = ROCIndicator(close=df_wrk["close"], window = self.__ROC_win)
-
-        self.__data[self.__ticker+"ROC_"+str(self.__ROC_win)] = indicator_ROC.roc().values
+        
+        field_nm = f'w{self.__ROC_win:02d}'
+        self.__data[self.__ticker+"ROC_"+field_nm] = indicator_ROC.roc().values
     
     def __cal_RSI(self) -> None:
         """
@@ -664,7 +897,8 @@ class Indicators(BaseEstimator, TransformerMixin):
         # Initialize RSI Indicator
         indicator_RSI = RSIIndicator(close=df_wrk["close"], window = self.__RSI_win)
 
-        self.__data[self.__ticker+"RSI_"+str(self.__RSI_win)] = indicator_RSI.rsi().values
+        field_nm = f'w{self.__RSI_win:02d}'
+        self.__data[self.__ticker+"RSI_"+field_nm] = indicator_RSI.rsi().values
     
     def __cal_StochRSI(self) -> None:
         """
@@ -942,7 +1176,9 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_CMF = ChaikinMoneyFlowIndicator(high = df_wrk["high"], low = df_wrk["low"], 
                                           close=df_wrk["close"], volume = df_wrk["volume"],
                                           window = self.__CMF_win)
-        self.__data[self.__ticker+"CMF_"+str(self.__CMF_win)] = indicator_CMF.chaikin_money_flow().values   
+
+        field_nm = f'w{self.__CMF_win:02d}'
+        self.__data[self.__ticker+"CMF_"+field_nm] = indicator_CMF.chaikin_money_flow().values   
      
     def __cal_EOM(self) -> None:
         """
@@ -972,8 +1208,10 @@ class Indicators(BaseEstimator, TransformerMixin):
         # Initialize Ease of Movement Indicator
         indicator_EOM = EaseOfMovementIndicator(high = df_wrk["high"], low = df_wrk["low"], 
                                           volume = df_wrk["volume"], window = self.__EOM_win)
-        self.__data[self.__ticker+"EOM_"+str(self.__EOM_win)] = indicator_EOM.ease_of_movement().values   
-        self.__data[self.__ticker+"EMV_"+str(self.__EOM_win)] = indicator_EOM.sma_ease_of_movement().values   
+
+        field_nm = f'w{self.__EOM_win:02d}'
+        self.__data[self.__ticker+"EOM_"+field_nm] = indicator_EOM.ease_of_movement().values   
+        self.__data[self.__ticker+"EMV_"+field_nm] = indicator_EOM.sma_ease_of_movement().values   
      
     def __cal_FI(self) -> None:
         """
@@ -1007,7 +1245,8 @@ class Indicators(BaseEstimator, TransformerMixin):
                                            volume = df_wrk["volume"], 
                                            window = self.__FI_win )
 
-        self.__data[self.__ticker+"FI_"+str(self.__FI_win)] = indicator_FI.force_index().values
+        field_nm = f'w{self.__FI_win:02d}'
+        self.__data[self.__ticker+"FI_"+field_nm] = indicator_FI.force_index().values
 
     def __cal_MFI(self) -> None:
         """
@@ -1042,7 +1281,9 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_MFI = MFIIndicator(high = df_wrk["high"], low = df_wrk["low"], 
                                           close=df_wrk["close"], volume = df_wrk["volume"],
                                           window = self.__MFI_win)
-        self.__data[self.__ticker+"MFI_"+str(self.__MFI_win)] = indicator_MFI.money_flow_index().values   
+
+        field_nm = f'w{self.__MFI_win:02d}'
+        self.__data[self.__ticker+"MFI_"+field_nm] = indicator_MFI.money_flow_index().values   
      
     def __cal_NVI(self) -> None:
         """
@@ -1169,8 +1410,8 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_VWAP = VolumeWeightedAveragePrice(high = df_wrk["high"], low = df_wrk["low"], 
                                           close=df_wrk["close"], volume = df_wrk["volume"],
                                           window = self.__VWAP_win)
-        self.__data[self.__ticker+"VWAP_"+str(self.__VWAP_win)] = \
-                indicator_VWAP.volume_weighted_average_price().values   
+        field_nm = f'w{self.__VWAP_win:02d}'
+        self.__data[self.__ticker+"VWAP_"+field_nm] = indicator_VWAP.volume_weighted_average_price().values   
      
     #
     # -------------------------------- Trend Indicators ------------------------------------
@@ -1210,9 +1451,11 @@ class Indicators(BaseEstimator, TransformerMixin):
         # Initialize Average Directional Movement Index Indicator
         indicator_ADX = ADXIndicator(high = df_wrk["high"], low = df_wrk["low"], 
                                      close=df_wrk["close"], window = self.__ADX_win)
-        # self.__data[self.__ticker+"ADX_"+str(self.__ADX_win)] = indicator_ADX.adx().values   
-        self.__data[self.__ticker+"ADXP_"+str(self.__ADX_win)] = indicator_ADX.adx_pos().values   
-        self.__data[self.__ticker+"ADXN_"+str(self.__ADX_win)] = indicator_ADX.adx_neg().values   
+
+        field_nm = f'w{self.__ADX_win:02d}'
+        # self.__data[self.__ticker+"ADX_"+field_nm] = indicator_ADX.adx().values   
+        self.__data[self.__ticker+"ADXP_"+field_nm] = indicator_ADX.adx_pos().values   
+        self.__data[self.__ticker+"ADXN_"+field_nm] = indicator_ADX.adx_neg().values   
     
     def __cal_Aroon(self) -> None:
         """
@@ -1244,9 +1487,11 @@ class Indicators(BaseEstimator, TransformerMixin):
         
         # Initialize Aroon Indicator
         indicator_AROON = AroonIndicator(close=df_wrk["close"], window = self.__AROON_win)
-        self.__data[self.__ticker+"AROOND_"+str(self.__AROON_win)] = indicator_AROON.aroon_down().values   
-        self.__data[self.__ticker+"AROON_"+str(self.__AROON_win)] = indicator_AROON.aroon_indicator().values   
-        self.__data[self.__ticker+"AROONU_"+str(self.__AROON_win)] = indicator_AROON.aroon_up().values   
+
+        field_nm = f'w{self.__AROON_win:02d}'
+        self.__data[self.__ticker+"AROOND_"+field_nm] = indicator_AROON.aroon_down().values   
+        self.__data[self.__ticker+"AROON_"+field_nm] = indicator_AROON.aroon_indicator().values   
+        self.__data[self.__ticker+"AROONU_"+field_nm] = indicator_AROON.aroon_up().values   
     
     def __cal_CCI(self) -> None:
         """
@@ -1280,7 +1525,9 @@ class Indicators(BaseEstimator, TransformerMixin):
         indicator_CCI = CCIIndicator(high = df_wrk["high"], low = df_wrk["low"], 
                                      close=df_wrk["close"], window = self.__CCI_win,
                                      constant = self.__CCI_const)
-        self.__data[self.__ticker+"CCI_"+str(self.__CCI_win)] = indicator_CCI.cci().values   
+
+        field_nm = f'w{self.__CCI_win:02d}'
+        self.__data[self.__ticker+"CCI_"+field_nm] = indicator_CCI.cci().values   
     
     def __cal_DPO(self) -> None:
         """
@@ -1309,7 +1556,9 @@ class Indicators(BaseEstimator, TransformerMixin):
         
         # Initialize Detrended Price Oscillator Indicator
         indicator_DPO = DPOIndicator(close=df_wrk["close"], window = self.__DPO_win)
-        self.__data[self.__ticker+"DPO_"+str(self.__DPO_win)] = indicator_DPO.dpo().values   
+
+        field_nm = f'w{self.__DPO_win:02d}'
+        self.__data[self.__ticker+"DPO_"+field_nm] = indicator_DPO.dpo().values   
     
     def __cal_EMA(self) -> None:
         """
@@ -1336,7 +1585,9 @@ class Indicators(BaseEstimator, TransformerMixin):
         
         # Initialize Exponential Moving Average Indicator
         indicator_EMA = EMAIndicator(close=df_wrk["close"], window = self.__EMA_win)
-        self.__data[self.__ticker+"EMA_"+str(self.__EMA_win)] = indicator_EMA.ema_indicator().values   
+
+        field_nm = f'w{self.__EMA_win:02d}'
+        self.__data[self.__ticker+"EMA_"+field_nm] = indicator_EMA.ema_indicator().values   
     
     def __cal_SMA(self,
                  SMA_win: int) -> None:
@@ -1624,7 +1875,7 @@ class Indicators(BaseEstimator, TransformerMixin):
         # Initialize Stochastic RSI Indicator
         indicator_TRIX = TRIXIndicator(close=df_wrk["close"], window = self.__TRIX_win )
 
-        field_nm = f'w({self.__TRIX_win:02d})'
+        field_nm = f'w{self.__TRIX_win:02d}'
         self.__data[self.__ticker+"TRIX_"+field_nm] = indicator_TRIX.trix().values
         
     def __cal_VI(self) -> None:
@@ -1657,7 +1908,7 @@ class Indicators(BaseEstimator, TransformerMixin):
         # Initialize Vortex Indicator
         indicator_VI = VortexIndicator(high = df_wrk["high"], low = df_wrk["low"], 
                                      close=df_wrk["close"], window = self.__VI_win )
-        field_nm = f'w({self.__VI_win:02d})'
+        field_nm = f'w{self.__VI_win:02d}'
         self.__data[self.__ticker+"VI_"+field_nm] = indicator_VI.vortex_indicator_diff().values   
         self.__data[self.__ticker+"VIN_"+field_nm] = indicator_VI.vortex_indicator_neg().values   
         self.__data[self.__ticker+"VIP_"+field_nm] = indicator_VI.vortex_indicator_pos().values   
@@ -1688,15 +1939,17 @@ class Indicators(BaseEstimator, TransformerMixin):
         # Initialize Stochastic RSI Indicator
         indicator_WMA = WMAIndicator(close=df_wrk["close"], window = self.__WMA_win )
 
-        field_nm = f'w({self.__WMA_win:02d})'
+        field_nm = f'w{self.__WMA_win:02d}'
         self.__data[self.__ticker+"WMA_"+field_nm] = indicator_WMA.wma().values
         
     #========================================================================================
     def calculate_indicators (self):
         """
-        Calculates the indicators of the dataframe provided. For compatibility 
-            purposes, it was added the ticker label in front of all columns 
-            created.
+        Calculates the indicators of the dataframe provided as specified 
+            by user. If 'calc_all' is True, then all indicators are calculated, 
+            overriding the 'list_ind' list. Otherwise, only the indicators present
+            in 'list_ind' will be calculated. For compatibility purposes, it was 
+            added the ticker label in front of all columns created.
             
         Args:
             self: object
@@ -1706,48 +1959,131 @@ class Indicators(BaseEstimator, TransformerMixin):
             None.
 
         """
-        self.__cal_return()
-        self.__cal_log_return()
-        self.__cal_price_change()
-        self.__cal_pct_change()
-        self.__cal_RA(5, 10)
-        self.__cal_Diff()
-        self.__cal_MA(5, 10)
-        self.__cal_VMA(5, 10, 20)
-        self.__cal_KAMA()
-        self.__cal_PPO()
-        self.__cal_PVO()
-        self.__cal_ROC()
-        self.__cal_RSI()
-        self.__cal_StochRSI()
-        self.__cal_SO()
-        self.__cal_AOI()
-        self.__cal_TSI()
-        self.__cal_UO()
-        self.__cal_WRI()
-        self.__cal_ADI()
-        self.__cal_CMF()
-        self.__cal_EOM()
-        self.__cal_FI()
-        self.__cal_MFI()
-        self.__cal_NVI()
-        self.__cal_OBV()
-        self.__cal_VPT()
-        self.__cal_VWAP()
-        self.__cal_ADX()
-        self.__cal_Aroon()
-        self.__cal_CCI()
-        self.__cal_DPO()
-        self.__cal_EMA()
-        self.__cal_Ichimoku()
-        self.__cal_KST()
-        self.__cal_MACD()
-        self.__cal_MI()
-        self.__cal_PSAR()
-        self.__cal_STC()
-        self.__cal_TRIX()
-        self.__cal_VI()
-        self.__cal_WMA()
+        if (self.__calc_all) | ('RET' in self.__list_ind):
+            self.__cal_return()
+            
+        if (self.__calc_all) | ('LRET' in self.__list_ind):
+            self.__cal_log_return()
+
+        if (self.__calc_all) | ('PCHG' in self.__list_ind):
+            self.__cal_price_change()
+
+        if (self.__calc_all) | ('PCTCHG' in self.__list_ind):
+            self.__cal_pct_change()
+
+        if (self.__calc_all) | ('RA' in self.__list_ind):
+            self.__cal_RA(5, 10)
+
+        if (self.__calc_all) | ('DIFF' in self.__list_ind):
+            self.__cal_Diff()
+
+        if (self.__calc_all) | ('MA' in self.__list_ind):
+            self.__cal_MA(5, 10)
+
+        if (self.__calc_all) | ('VMA' in self.__list_ind):
+            self.__cal_VMA(5, 10, 20)
+
+        if (self.__calc_all) | ('KAMA' in self.__list_ind):
+            self.__cal_KAMA()
+
+        if (self.__calc_all) | ('PPO' in self.__list_ind):
+            self.__cal_PPO()
+
+        if (self.__calc_all) | ('PVO' in self.__list_ind):
+            self.__cal_PVO()
+
+        if (self.__calc_all) | ('ROC' in self.__list_ind):
+            self.__cal_ROC()
+
+        if (self.__calc_all) | ('RSI' in self.__list_ind):
+            self.__cal_RSI()
+
+        if (self.__calc_all) | ('STRSI' in self.__list_ind):
+            self.__cal_StochRSI()
+
+        if (self.__calc_all) | ('SO' in self.__list_ind):
+            self.__cal_SO()
+
+        if (self.__calc_all) | ('AOI' in self.__list_ind):
+            self.__cal_AOI()
+
+        if (self.__calc_all) | ('TSI' in self.__list_ind):
+            self.__cal_TSI()
+
+        if (self.__calc_all) | ('UO' in self.__list_ind):
+            self.__cal_UO()
+
+        if (self.__calc_all) | ('WRI' in self.__list_ind):
+            self.__cal_WRI()
+
+        if (self.__calc_all) | ('ADI' in self.__list_ind):
+            self.__cal_ADI()
+
+        if (self.__calc_all) | ('CMF' in self.__list_ind):
+            self.__cal_CMF()
+
+        if (self.__calc_all) | ('EOM' in self.__list_ind):
+            self.__cal_EOM()
+
+        if (self.__calc_all) | ('FI' in self.__list_ind):
+            self.__cal_FI()
+
+        if (self.__calc_all) | ('MFI' in self.__list_ind):
+            self.__cal_MFI()
+
+        if (self.__calc_all) | ('NVI' in self.__list_ind):
+            self.__cal_NVI()
+
+        if (self.__calc_all) | ('OBV' in self.__list_ind):
+            self.__cal_OBV()
+
+        if (self.__calc_all) | ('VPT' in self.__list_ind):
+            self.__cal_VPT()
+
+        if (self.__calc_all) | ('VWAP' in self.__list_ind):
+            self.__cal_VWAP()
+
+        if (self.__calc_all) | ('ADX' in self.__list_ind):
+            self.__cal_ADX()
+
+        if (self.__calc_all) | ('AROON' in self.__list_ind):
+            self.__cal_Aroon()
+
+        if (self.__calc_all) | ('CCI' in self.__list_ind):
+            self.__cal_CCI()
+
+        if (self.__calc_all) | ('DPO' in self.__list_ind):
+            self.__cal_DPO()
+
+        if (self.__calc_all) | ('EMA' in self.__list_ind):
+            self.__cal_EMA()
+
+        if (self.__calc_all) | ('ICHI' in self.__list_ind):
+            self.__cal_Ichimoku()
+
+        if (self.__calc_all) | ('KST' in self.__list_ind):
+            self.__cal_KST()
+
+        if (self.__calc_all) | ('MACD' in self.__list_ind):
+            self.__cal_MACD()
+
+        if (self.__calc_all) | ('MI' in self.__list_ind):
+            self.__cal_MI()
+
+        if (self.__calc_all) | ('PSAR' in self.__list_ind):
+            self.__cal_PSAR()
+
+        if (self.__calc_all) | ('STC' in self.__list_ind):
+            self.__cal_STC()
+
+        if (self.__calc_all) | ('TRIX' in self.__list_ind):
+            self.__cal_TRIX()
+
+        if (self.__calc_all) | ('VI' in self.__list_ind):
+            self.__cal_VI()
+
+        if (self.__calc_all) | ('WMA' in self.__list_ind):
+            self.__cal_WMA()
 
     def normalize_data(self):
         """
@@ -1764,9 +2100,11 @@ class Indicators(BaseEstimator, TransformerMixin):
 
         """
         col_names = self.__data.columns
+        
+        self.__norm_data = pd.DataFrame(index = self.__data.index)
+
         for col in col_names:
-            self.__data["N_"+col] = self.__scale_data(col)
-                
+            self.__norm_data[col+'_norm'] = self.__scale_data(col)
 
     def fit(self, 
             X: pd.DataFrame(dtype=float) = data, 
@@ -1819,8 +2157,9 @@ class Indicators(BaseEstimator, TransformerMixin):
 
         if self.__norm_data:
             self.normalize_data()
-
-        return self.__data
+            return self.__norm_data        
+        else:
+            return self.__data
     
     def fit_transform(self, 
                   X: pd.DataFrame(dtype=float), 

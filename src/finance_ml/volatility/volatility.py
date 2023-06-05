@@ -19,12 +19,14 @@ set_config(transform_output="pandas")
 class Volatility(BaseEstimator, TransformerMixin):
     
     def __init__(self,
-                 col_open: str,
-                 col_high: str,
-                 col_low: str,
-                 col_close: str,
-                 col_volume: str,
+                 col_open: str = 'OPEN',
+                 col_high: str = 'HIGHT',
+                 col_low: str = 'LOW',
+                 col_close: str = 'CLOSE',
+                 col_volume: str = 'VOLUME',
                  ticker: str = '',
+                 calc_all: bool = True,
+                 list_vol: list = [],
                  atr_win: int = 14,
                  bb_win: int = 20,
                  bb_dev: int = 2,
@@ -51,6 +53,8 @@ class Volatility(BaseEstimator, TransformerMixin):
             col_close (str): column containing the "CLOSE" data
             col_volume (str): column containing the "VOLUME" data
             ticker (str): ticker of the stock
+            calc_all (bool): if True, calc all indicators
+            list_vol (list): list of indicators do calculate if calc_all is False
             atr_win (int): n ATR period
             bb_win (int): n period for Bollinger-Bands indicator
             bb_dev (int): n factor standard deviation
@@ -67,6 +71,19 @@ class Volatility(BaseEstimator, TransformerMixin):
             None
 
         """
+        VOL_LIST = ['BB', 'ATR', 'DC', 'KC', 'UI', 'CS', 'HT', 'YZ', 'RZ', 'GK']
+        
+        if (type(calc_all) != bool):
+            raise ValueError('Volatility Class - Parameter calc_all must be True or False')
+        
+        if (type(list_vol) != list):
+            raise ValueError('Volatility Class - Parameter list_ind must be a list')
+            
+        list_vol = [l.upper() for l in list_vol]
+        
+        if (not set(list_vol).issubset(VOL_LIST)):
+            raise ValueError(f'Volatility Class - Invalid Indicator {set(list_vol)-set(VOL_LIST)}')
+        
         if (type(col_open) != str):
             raise ValueError('Volatility Class - Parameter col_open must be a valid str')
 
@@ -121,6 +138,8 @@ class Volatility(BaseEstimator, TransformerMixin):
         self.__col_low = self.__ticker + col_low
         self.__col_close = self.__ticker + col_close
         self.__col_volume = self.__ticker + col_volume
+        self.__calc_all = calc_all
+        self.__list_vol = list_vol
         self.__atr_win = atr_win
         self.__bb_win = bb_win
         self.__bb_dev = bb_dev
@@ -134,11 +153,11 @@ class Volatility(BaseEstimator, TransformerMixin):
         self.__trading_periods = trading_periods
 
     @property
-    def data(self):
+    def data(self) -> pd.DataFrame(dtype=float):
         return self.__data
 
     @property
-    def ticker(self):
+    def ticker(self) -> str:
         return self.__ticker
 
     def __getBeta(self,
@@ -263,7 +282,7 @@ class Volatility(BaseEstimator, TransformerMixin):
         indicator_bb = BollingerBands(close=df_wrk["close"], window=self.__bb_win, window_dev=self.__bb_dev)
         
         # Add Bollinger Bands features
-        field_nm = f'w({self.__bb_win:02d})'
+        field_nm = f'w{self.__bb_win:02d}'
         self.__data[self.__ticker+"BBM_"+field_nm] = indicator_bb.bollinger_mavg().values
         self.__data[self.__ticker+"BBH_"+field_nm] = indicator_bb.bollinger_hband().values
         self.__data[self.__ticker+"BBL_"+field_nm] = indicator_bb.bollinger_lband().values
@@ -305,7 +324,7 @@ class Volatility(BaseEstimator, TransformerMixin):
                                          close = df_wrk["close"], window = self.__atr_win)
         
         # Add ATR features
-        field_nm = f'w({self.__atr_win:02d})'
+        field_nm = f'w{self.__atr_win:02d}'
         self.__data[self.__ticker+"ATR_"+field_nm] = indicator_atr.average_true_range().values  
     
     def cal_DonchianChannel(self) -> None:
@@ -333,7 +352,7 @@ class Volatility(BaseEstimator, TransformerMixin):
                                          close = df_wrk["close"], window = self.__dc_win)
         
         # Add Donchian Channel Bands features
-        field_nm = f'w({self.__dc_win:02d})'
+        field_nm = f'w{self.__dc_win:02d}'
         self.__data[self.__ticker+"DCM_"+field_nm] = indicator_dc.donchian_channel_mband().values
         self.__data[self.__ticker+"DCH_"+field_nm] = indicator_dc.donchian_channel_hband().values
         self.__data[self.__ticker+"DCL_"+field_nm] = indicator_dc.donchian_channel_lband().values
@@ -368,7 +387,7 @@ class Volatility(BaseEstimator, TransformerMixin):
                                          multiplier = self.__kc_mult)
         
         # Add Keltner Channel Bands features
-        field_nm = f'w({self.__kc_win:02d})wa({self.__kc_win_atr:02d})m({self.__kc_mult:02d})'
+        field_nm = f'w{self.__kc_win:02d}wa{self.__kc_win_atr:02d}m{self.__kc_mult:02d}'
         self.__data[self.__ticker+"KCH_"+field_nm] = indicator_kc.keltner_channel_hband().values
         self.__data[self.__ticker+"KCHI_"+field_nm] = indicator_kc.keltner_channel_hband_indicator().values
         self.__data[self.__ticker+"KCL_"+field_nm] = indicator_kc.keltner_channel_lband().values
@@ -408,7 +427,7 @@ class Volatility(BaseEstimator, TransformerMixin):
         indicator_ui = UlcerIndex(close=df_wrk["close"], window=self.__ui_win)
         
         # Add Ulcer Index indicator
-        field_nm = f'w({self.__ui_win:02d})'
+        field_nm = f'w{self.__ui_win:02d}'
         self.__data[self.__ticker+"UI_"+field_nm] = indicator_ui.ulcer_index().values
            
     #------------------------------------------------------------------------------------
@@ -439,7 +458,8 @@ class Volatility(BaseEstimator, TransformerMixin):
         startTime = pd.Series(self.__data.index[0:spread.shape[0]], index = spread.index)
         spread = pd.concat([spread,startTime], axis = 1)
         spread.columns = ['Spread','Start_Time'] # 1st loc used to compute beta
-        field_nm = f'sl({sl:02d})'
+
+        field_nm = f'sl{sl:02d}'
         self.__data[self.__ticker+'CorwinSchultz_'+field_nm] = spread['Spread'].values
     
     def cal_GarmanKlass(self,
@@ -471,7 +491,7 @@ class Volatility(BaseEstimator, TransformerMixin):
         
         result = rs.rolling(window = self.__window, center = False).apply(func=f)
         
-        field_nm = f'w({self.__window:02d}tp({self.__trading_periods:03d}))'
+        field_nm = f'w{self.__window:02d}tp{self.__trading_periods:03d}'
         if clean:
             self.__data[self.__ticker+'GarmanKlass_'+field_nm] = result.dropna().values
         else:
@@ -507,7 +527,7 @@ class Volatility(BaseEstimator, TransformerMixin):
         
         result = rs.rolling(window = self.__window, center = False).apply(func=f)
         
-        field_nm = f'w({self.__window:02d}tp({self.__trading_periods:03d}))'
+        field_nm = f'w{self.__window:02d}tp{self.__trading_periods:03d}'
         if clean:
             self.__data[self.__ticker+'RogersSatchell_'+field_nm] = result.dropna().values
         else:
@@ -551,7 +571,7 @@ class Volatility(BaseEstimator, TransformerMixin):
         k = 0.34 / (1 + (self.__window + 1) / (self.__window - 1))
         result = (open_vol + k * close_vol + (1 - k) * window_rs).apply(np.sqrt) * math.sqrt(self.__trading_periods)
     
-        field_nm = f'w({self.__window:02d}tp({self.__trading_periods:03d}))'
+        field_nm = f'w{self.__window:02d}tp{self.__trading_periods:03d}'
         if clean:
             self.__data[self.__ticker+'YangZhang_'+field_nm] = result.dropna().values
         else:
@@ -587,7 +607,7 @@ class Volatility(BaseEstimator, TransformerMixin):
     
         result = vol * adj_factor
     
-        field_nm = f'w({self.__window:02d}tp({self.__trading_periods:03d}))'
+        field_nm = f'w{self.__window:02d}tp{self.__trading_periods:03d}'
         if clean:
             self.__data[self.__ticker+'HodgesTompkins_'+field_nm] = result.dropna().values
         else:
@@ -596,7 +616,10 @@ class Volatility(BaseEstimator, TransformerMixin):
 
     def calculate_volatilities (self):
         """
-        Calculates the volatility indicators of the dataframe provided. 
+        Calculates the volatility indicators of the dataframe provided as specified 
+            by user. If 'calc_all' is True, then all indicators are calculated, 
+            overriding the 'list_ind' list. Otherwise, only the indicators present
+            in 'list_ind' will be calculated.  
             For compatibility purposes, it was added the ticker label in front 
             of all columns created.
             
@@ -608,19 +631,40 @@ class Volatility(BaseEstimator, TransformerMixin):
             None.
 
         """
-        # Calculate Technical Indicators
-        self.cal_BollingerBands ()
-        self.cal_ATR()
-        self.cal_DonchianChannel ()
-        self.cal_KeltnerChannel ()
-        self.cal_UlcerIndex ()
         
+        # Calculate Technical Indicators
+            
+        if (self.__calc_all) | ('BB' in self.__list_vol):
+            self.cal_BollingerBands ()
+            
+        if (self.__calc_all) | ('ATR' in self.__list_vol):
+            self.cal_ATR()
+            
+        if (self.__calc_all) | ('DC' in self.__list_vol):
+            self.cal_DonchianChannel ()
+            
+        if (self.__calc_all) | ('KC' in self.__list_vol):
+            self.cal_KeltnerChannel ()
+            
+        if (self.__calc_all) | ('UI' in self.__list_vol):
+            self.cal_UlcerIndex ()
+            
         # Calculate Volatility Indicators
-        self.cal_CorwinSchultz()
-        self.cal_HodgesTompkins()
-        self.cal_YangZhang()
-        self.cal_RogersSatchell()
-        self.cal_GarmanKlass()
+            
+        if (self.__calc_all) | ('CS' in self.__list_vol):
+            self.cal_CorwinSchultz()
+            
+        if (self.__calc_all) | ('HT' in self.__list_vol):
+            self.cal_HodgesTompkins()
+            
+        if (self.__calc_all) | ('YZ' in self.__list_vol):
+            self.cal_YangZhang()
+            
+        if (self.__calc_all) | ('RS' in self.__list_vol):
+            self.cal_RogersSatchell()
+            
+        if (self.__calc_all) | ('GK' in self.__list_vol):
+            self.cal_GarmanKlass()
         
     def fit(self, 
             X: pd.DataFrame(dtype=float), 

@@ -1,3 +1,8 @@
+"""
+Created on Tue May 16 13:00:00 2023
+
+@Group: Luis Alvaro Correia
+"""
 import pytest
 
 import numpy as np

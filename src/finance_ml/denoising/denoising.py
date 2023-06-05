@@ -2,7 +2,8 @@
 Created on Mon May 8 19:00:00 2023
 
 @Group: 
-    Franci Daniele Prochnow Gaensly and Frederico Alexandre
+    Franci Daniele Prochnow Gaensly
+    Frederico Alexandre
     Coded by Luis Alvaro Correia
 """
 
@@ -24,6 +25,26 @@ class Denoising():
                  method: str = 'constant_residuals',
                  bWidth: float = 0.01,
                  ):
+        """
+        Initialize data.
+            
+        Args:
+            self: object
+                All entries in function __init__.        
+            data (pd.DataFrame): Columns of dataframe containing the variables 
+                to be scaled.
+            alpha (float): Regulates the amount of shrinkage among the eigenvectors 
+                and eigenvalues associated with noise
+            pts (int): No. of points used to construct the PDF
+            nFacts (int): No. of significant factors
+            q (float): T/N where T is the no. of rows and N the no. of columns
+            method (str): Method for denoising ['constant_residuals', 'shrinkage']
+            bWidth (float): The bandwidth of the kernel
+
+        Returns:
+            None
+
+        """
         if (type(alpha) != float) | (alpha <= 0.0) | (alpha >= 1.0):
             raise ValueError('Denoising Class - Parameter alpha must be float, between 0 and 1')
 
@@ -42,14 +63,12 @@ class Denoising():
         if (type(q) != float) | (q <= 1.0):
             raise ValueError('Denoising Class - Parameter q=T/N must be float, greater than 1.0')
         
-        self.__alpha = alpha    # alpha (float): Regulates the amount of shrinkage among the eigenvectors
-                                # and eigenvalues associated with noise (default=.5)
-        self.__pts = pts        # pts (int): No. of points used to construct the PDF (default=1000)
-        self.__nFacts = nFacts  # nFacts (int): No. of significant factors (default=100)
-        self.__q = q            # q (float): T/N where T is the no. of rows and N the no. of columns (default=10)
-        self.__method = method  # method (str): Method for denoising ['constant_residuals', 'shrinkage']
-                                #   (default='constant_residuals')
-        self.__bWidth = bWidth  # bWidth (float): The bandwidth of the kernel (default=.01)
+        self.__alpha = alpha    
+        self.__pts = pts
+        self.__nFacts = nFacts
+        self.__q = q
+        self.__method = method
+        self.__bWidth = bWidth
             
     def calc_PDF(self,
               var: float  ) -> pd.Series(dtype = float):
