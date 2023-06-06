@@ -372,14 +372,15 @@ class Denoising():
         corr2 = corr0 + self.__alpha * corr1 + (1 - self.__alpha) * np.diag(np.diag(corr1)) 
         return corr2
    
-    def fit(self, 
-            X: pd.DataFrame(dtype=float), 
-            y = None):
+    def run_denoising(self, 
+                      X: pd.DataFrame(dtype=float)):
                
         """
         Uses the dataframe containing all variables of our financial series
             to calculate its covariance matrix. The results are passed through
             'self' object and are acesses using getter methods of Denoising class.
+        Transforms covariance matrix calculated by the 'fit' process and performs
+            the denoise and detoning of correlation matrix.
             
         Args:
             self: object
@@ -403,27 +404,6 @@ class Denoising():
         eMax0, var0 = self.find_max_eval(np.diag(self.__eVal0))
         self.__nFacts0 = self.__eVal0.shape[0] - np.diag(self.__eVal0)[::-1].searchsorted(eMax0)
 
-        return self
-        
-    def transform(self, 
-                  X: pd.DataFrame(dtype=float), 
-                  y = None                     ):
-        """
-        Transforms covariance matrix calculated by the 'fit' process and performs
-            the denoise and detoning of correlation matrix.
-            
-        Args:
-            self: object
-                All entries in function __init__.        
-    
-            X (pd.DataFrame): Columns of dataframe containing the variables to be
-                used to calculate the covariance matrix. The results are passed through
-                'self' object and are acesses using getter methods of Denoising class.
-
-        Returns:
-            self (object)
-
-        """
         #----- Denoising The Corr Matrix - Residual Eigenvalue
         if self.__method == 'constant_residuals':
             self.__corr1 = self.denoised_corr(self.__eVal0, self.__eVec0, self.__nFacts0)
@@ -436,30 +416,4 @@ class Denoising():
         self.__cov1 = self.corr_to_cov(self.__corr1, np.diag(self.__cov0)**.5)
             
         return self
-    
-    def fit_transform(self, 
-                  X: pd.DataFrame(dtype=float), 
-                  y = None                     ):
-        """
-        Fit and Transforms the dataframe containing all variables of our financial series
-            calculating the covariance matrix and processing the denoise and detoning.
-            (This routine is intented to maintaing sklearn Pipeline compatibility)
-            
-        Args:
-            self: object
-                All entries in function __init__.        
-    
-            X (pd.DataFrame): Columns of dataframe containing the variables to be
-                used to calculate the covariance matrix.
-
-        Returns:
-            self (object)
-
-        """
-
-        self.fit(X)
-        self.transform(X)
         
-        return self
-        
-    

@@ -13,8 +13,6 @@ from ta.volatility import BollingerBands, AverageTrueRange, DonchianChannel, \
                             KeltnerChannel, UlcerIndex
 
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn import set_config
-set_config(transform_output="pandas")
 
 class Volatility(BaseEstimator, TransformerMixin):
     

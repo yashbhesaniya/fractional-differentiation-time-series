@@ -21,8 +21,6 @@ from ta.trend import ADXIndicator, AroonIndicator, CCIIndicator, DPOIndicator, E
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from sklearn import set_config
-set_config(transform_output="pandas")
 
 class Indicators(BaseEstimator, TransformerMixin):
     
@@ -550,7 +548,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             scaler = MinMaxScaler(feature_range=(-1,1))
         else:
             scaler = StandardScaler()
-        return scaler.fit_transform(values).values
+        return scaler.fit_transform(values).flatten()
 
     def __cal_price_change(self) -> None:
         """
@@ -2107,8 +2105,8 @@ class Indicators(BaseEstimator, TransformerMixin):
             self.__norm_data[col+'_norm'] = self.__scale_data(col)
 
     def fit(self, 
-            X: pd.DataFrame(dtype=float) = data, 
-            y = None):
+            X: pd.DataFrame(dtype=float), 
+            y = None ):
                
         """
         Method defined for compatibility purposes.
@@ -2133,7 +2131,7 @@ class Indicators(BaseEstimator, TransformerMixin):
         
     def transform(self, 
                   X: pd.DataFrame(dtype=float), 
-                  y = None                     ) -> pd.DataFrame(dtype=float):
+                  y = None ) -> pd.DataFrame(dtype=float):
         """
         Transforms the dataframe containing all variables of our financial series
             calculating the indicators.

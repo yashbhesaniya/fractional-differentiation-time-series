@@ -19,7 +19,7 @@ def test_denoising():
     X = np.random.normal(size=(1000,100))
 
     # Instanciate the Denoising transformer
-    denoise_processor = Denoising().fit_transform(X)    
+    denoise_processor = Denoising().run_denoising(X)    
     
     ## Test Types ##
     assert isinstance(denoise_processor.get_cov_original, np.ndarray)
