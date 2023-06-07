@@ -11,29 +11,29 @@ import pandas as pd
 from src.finance_ml.data_preparation.data_preparation import DataLoader
 from src.finance_ml.indicators.indicators import Indicators
 
-def test_volatility() -> pd.DataFrame(dtype=float):
+def test_volatility():
     '''
     Tests consistency of Indicators on instantiation and the warning on inconsistent data entry.
     '''
     # Generating a random matrix
-    # Defining time_index_col (must be the same column in all inputs) and 
+    # Defining time_index_col (must be the same column in all inputs) and
     # keep_cols refering to the columns that will remain in the dataset
-    dataloader = DataLoader(time_index_col= 'DATE', 
+    dataloader = DataLoader(time_index_col= 'DATE',
                     keep_cols = ['VOLUME','OPEN', 'HIGHT', 'LOW', 'CLOSE', 'VW','TRANSACTIONS'])
     fname_USDBRL = 'FX/USDBRL_2020-04-07_2022-04-06.parquet'
 
     # No. of Records from example dataset
     N = 10000
-    
+
     # Dataset chosen in this simulation
     ticker = 'USDBRL'
     fname = fname_USDBRL
-    
+
     df = dataloader.load_dataset({ticker:'data/'+fname}).iloc[:N]
 
     # Instanciate the Denoising transformer
     indicator_processor = Indicators(ticker = ticker, norm_data = True)
-    
+
     assert isinstance(indicator_processor._Indicators__ticker, str)
     assert isinstance(indicator_processor._Indicators__col_open, str)
     assert isinstance(indicator_processor._Indicators__col_high, str)
@@ -43,10 +43,10 @@ def test_volatility() -> pd.DataFrame(dtype=float):
 
     assert isinstance(indicator_processor._Indicators__norm_data, bool)
     assert isinstance(indicator_processor._Indicators__scale_method, str)
-    
+
     assert isinstance(indicator_processor._Indicators__calc_all, bool)
     assert isinstance(indicator_processor._Indicators__list_ind, list)
-    
+
     assert isinstance(indicator_processor._Indicators__KAMA_win, int)
     assert isinstance(indicator_processor._Indicators__KAMA_pow1, int)
     assert isinstance(indicator_processor._Indicators__KAMA_pow2, int)
@@ -115,30 +115,30 @@ def test_volatility() -> pd.DataFrame(dtype=float):
     assert isinstance(indicator_processor._Indicators__WMA_win, int)
 
     df = indicator_processor.fit_transform(df)
-    
+
     df_norm = indicator_processor.norm_data
-    
+
     # Test if all columns of normalized data are between -1.0 and 1.0
     for col in df_norm.columns:
-        assert np.logical_and(df.filter(regex = col).values >= -1.0, 
+        assert np.logical_and(df.filter(regex = col).values >= -1.0,
                           df.filter(regex = col).values <= 1.0).all()
-    
+
 def test_indicators_param_col_open():
     with pytest.raises(ValueError):
         assert Indicators(col_open = 1)
-    
+
 def test_indicators_param_col_high():
     with pytest.raises(ValueError):
         assert Indicators(col_high = 1)
-    
+
 def test_indicators_param_col_low():
     with pytest.raises(ValueError):
         assert Indicators(col_low = 1)
-    
+
 def testindicators_param_col_close():
     with pytest.raises(ValueError):
         assert Indicators(col_close = 1)
-    
+
 def test_indicators_param_col_volume():
     with pytest.raises(ValueError):
         assert Indicators(col_volume = 1)
