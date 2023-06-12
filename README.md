@@ -200,7 +200,7 @@ Important commands:
         3. git checkout branch_name (switch to an existing branch named 'branch_name').
         4. git add . (add all files from the working directory to the staging area).
         5. git commit -m "short description" (commit files from the staging area to the local repository).
-        6. git merge other_branch (includes changes made in branch_name to other_branch)
+        6. git merge branch_name (merges the changes from branch_name into the current branch, which is the branch you are currently working on)
         7. git push origin branch_name (send changes from the local repository to the remote repository (GitHub)).
         8. **Do not push to the main branch**
 
