@@ -95,7 +95,7 @@ class CrossValidation():
         vector_pred = np.array(prediction)
 
         vector_Y_test = np.array(Y_test)
-        error = (1/len(Y_test))*sum((vector_pred - vector_Y_test)**2)
+        error = error_metric_function(vector_pred, vector_Y_test)
         Total_error.append(error)
 
         return Total_error
