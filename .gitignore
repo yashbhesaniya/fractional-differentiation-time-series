@@ -1,6 +1,7 @@
 # Folders
 /build
 /dist
+/financeml_env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
