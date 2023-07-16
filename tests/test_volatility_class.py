@@ -2,6 +2,9 @@
 Created on Tue May 30 14:00:00 2023
 
 @Group: Luis Alvaro Correia
+
+Updated: July 15th
+    1. Included tests for parameter 'sl' for Corwin-Schultz Volatility indicator
 """
 import pytest
 
@@ -54,7 +57,7 @@ def test_volatility():
     assert isinstance(volatility_processor._Volatility__kc_win_atr, int)
     assert isinstance(volatility_processor._Volatility__ticker, str)
     assert isinstance(volatility_processor._Volatility__ui_win, int)
-    assert isinstance(volatility_processor._Volatility__ui_win, int)
+    assert isinstance(volatility_processor._Volatility__sl_win, int)
 
     df = volatility_processor.fit_transform(df)
 
@@ -167,6 +170,13 @@ def test_volatility_param_ui_win():
 
     with pytest.raises(ValueError):
         assert Volatility(ui_win = -3.4)
+
+def test_volatility_param_sl_win():
+    with pytest.raises(ValueError):
+        assert Volatility(sl_win = 3.2)
+
+    with pytest.raises(ValueError):
+        assert Volatility(sl_win = -1.2)
 
 def test_volatility_param_window():
     with pytest.raises(ValueError):

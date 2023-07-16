@@ -2,6 +2,11 @@
 Created on Fri May 12 19:00:00 2023
 
 @author: Luis Alvaro Correia
+
+Updated: July 15th
+    1. Included parameter 'sl' for CorwinSchultz high-low volatility index
+    2. Set return to 'None' for functions cal_CorwinSchultz, cal_GarmanKlass, 
+        cal_RogersSatchell, cal_YangZhang and cal_HodgesTompkins
 """
 # Import required packages
 import pandas as pd
@@ -34,6 +39,7 @@ class Volatility(BaseEstimator, TransformerMixin):
                  kc_win_atr: int = 10,
                  kc_mult: int = 2,
                  ui_win: int = 14,
+                 sl_win: int = 1,
                  window: int = 30,
                  trading_periods: int = 252,
                  ):
@@ -62,6 +68,7 @@ class Volatility(BaseEstimator, TransformerMixin):
             kc_win_atr (int): n ATR period. Only valid if original_version param is False.
             kc_mult (int): multiplier for Keltner-Channel indicator
             ui_win (int): n period of Ulcer Index
+            sl_win (int): n periods of 2-day spread for Corwin-Schultz indicator
             window (int): no. of days for rolling prices
             trading_periods (int): no. of trading periods
 
@@ -124,6 +131,9 @@ class Volatility(BaseEstimator, TransformerMixin):
         if (type(ui_win) != int) | (ui_win <= 0):
             raise ValueError('Volatility Class - Parameter ui_win must be int, positive')
 
+        if (type(sl_win) != int) | (ui_win <= 0):
+            raise ValueError('Volatility Class - Parameter sl_win must be int, positive')
+
         if (type(window) != int) | (window <= 0):
             raise ValueError('Volatility Class - Parameter window must be int, positive')
 
@@ -147,6 +157,7 @@ class Volatility(BaseEstimator, TransformerMixin):
         self.__kc_win_atr = kc_win_atr
         self.__kc_mult = kc_mult
         self.__ui_win = ui_win
+        self.__sl_win = sl_win
         self.__window = window
         self.__trading_periods = trading_periods
 
@@ -430,8 +441,7 @@ class Volatility(BaseEstimator, TransformerMixin):
            
     #------------------------------------------------------------------------------------
     # IMPLEMENTATION OF THE CORWIN-SCHULTZ Algorithm
-    def cal_CorwinSchultz(self,
-                      sl: int = 1):
+    def cal_CorwinSchultz(self) -> None:
         """
         Adapted from Chap. 2 of  "Volatility Trading", by
         - Euan Sinclair - Wiley, 1st. edition
@@ -442,14 +452,14 @@ class Volatility(BaseEstimator, TransformerMixin):
             self: object
                 All entries in function __init__.        
             series (pd.Series): Series of data prices
-            sl (int): no. of days for rolling prices
+            sl (int): n periods of 2-day spread for Corwin-Schultz indicator
 
         Returns:
             None.
 
         """
         # Note: S<0 iif alpha<0
-        beta = self.__getBeta(sl)
+        beta = self.__getBeta(self.__sl_win)
         gamma = self.__getGamma()
         alpha = self.__getAlpha(beta, gamma)
         spread = 2 * (np.exp(alpha) - 1) / (1 + np.exp(alpha))
@@ -457,11 +467,11 @@ class Volatility(BaseEstimator, TransformerMixin):
         spread = pd.concat([spread,startTime], axis = 1)
         spread.columns = ['Spread','Start_Time'] # 1st loc used to compute beta
 
-        field_nm = f'sl{sl:02d}'
+        field_nm = f'sl{self.__sl_win:02d}'
         self.__data[self.__ticker+'CorwinSchultz_'+field_nm] = spread['Spread'].values
     
     def cal_GarmanKlass(self,
-                        clean:bool = False):
+                        clean:bool = False) -> None:
     
         """
         Adapted from Chap. 2 of  "Volatility Trading", by
@@ -496,7 +506,7 @@ class Volatility(BaseEstimator, TransformerMixin):
             self.__data[self.__ticker+'GarmanKlass_'+field_nm] = result.values
         
     def cal_RogersSatchell(self,
-                           clean:bool = False):
+                           clean:bool = False) -> None:
         
         """
         Adapted from Chap. 2 of  "Volatility Trading", by
@@ -532,7 +542,7 @@ class Volatility(BaseEstimator, TransformerMixin):
             self.__data[self.__ticker+'RogersSatchell_'+field_nm] = result.values
         
     def cal_YangZhang(self,
-                      clean:bool = False):
+                      clean:bool = False) -> None:
     
         """
         Adapted from Chap. 2 of  "Volatility Trading", by
@@ -576,7 +586,7 @@ class Volatility(BaseEstimator, TransformerMixin):
             self.__data[self.__ticker+'YangZhang_'+field_nm] = result.values
         
     def cal_HodgesTompkins(self,
-                           clean:bool = False):
+                           clean:bool = False) -> None:
         
         """
         Adapted from Chap. 2 of  "Volatility Trading", by
