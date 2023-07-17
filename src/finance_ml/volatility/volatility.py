@@ -451,8 +451,6 @@ class Volatility(BaseEstimator, TransformerMixin):
         Args:
             self: object
                 All entries in function __init__.        
-            series (pd.Series): Series of data prices
-            sl (int): n periods of 2-day spread for Corwin-Schultz indicator
 
         Returns:
             None.
