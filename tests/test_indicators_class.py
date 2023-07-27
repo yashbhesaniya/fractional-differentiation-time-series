@@ -2,16 +2,21 @@
 Created on Sun Jun  4 01:10:13 2023
 
 @author: Luis Alvaro Correia
+
+Updated: July 27th
+    1. Updated function '__cal_SMA()' to receive parameter via 'self'
+    2. Fixed the name of function 'test_indicators()'
+    3. Adjusted the new name for normalized data as 'data_norm'
+
 """
 import pytest
 
 import numpy as np
-import pandas as pd
 
 from src.finance_ml.data_preparation.data_preparation import DataLoader
 from src.finance_ml.indicators.indicators import Indicators
 
-def test_volatility():
+def test_indicators():
     '''
     Tests consistency of Indicators on instantiation and the warning on inconsistent data entry.
     '''
@@ -85,6 +90,7 @@ def test_volatility():
     assert isinstance(indicator_processor._Indicators__CCI_const, float)
     assert isinstance(indicator_processor._Indicators__DPO_win, int)
     assert isinstance(indicator_processor._Indicators__EMA_win, int)
+    assert isinstance(indicator_processor._Indicators__SMA_win, int)
     assert isinstance(indicator_processor._Indicators__ICHI_win1, int)
     assert isinstance(indicator_processor._Indicators__ICHI_win2, int)
     assert isinstance(indicator_processor._Indicators__ICHI_win3, int)
@@ -116,7 +122,7 @@ def test_volatility():
 
     df = indicator_processor.fit_transform(df)
 
-    df_norm = indicator_processor.norm_data
+    df_norm = indicator_processor.data_norm
 
     # Test if all columns of normalized data are between -1.0 and 1.0
     for col in df_norm.columns:
@@ -311,6 +317,10 @@ def test_indicators_param_DPO_win():
 def test_indicators_param_EMA_win():
     with pytest.raises(ValueError):
         assert Indicators(EMA_win = -5.55577474919645)
+
+def test_indicators_param_SMA_win():
+    with pytest.raises(ValueError):
+        assert Indicators(SMA_win = -4.5588639645)
 
 def test_indicators_param_ICHI_win1():
     with pytest.raises(ValueError):

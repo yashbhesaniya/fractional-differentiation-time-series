@@ -5,6 +5,10 @@ Created on Mon May 8 19:00:00 2023
     Franci Daniele Prochnow Gaensly
     Frederico Alexandre
     Coded by Luis Alvaro Correia
+    
+Updated: July 27th
+    1. Removed dscription of 'self' parameter on function's documentation
+
 """
 
 # Import required packages
@@ -29,8 +33,6 @@ class Denoising():
         Initialize data.
             
         Args:
-            self: object
-                All entries in function __init__.        
             data (pd.DataFrame): Columns of dataframe containing the variables 
                 to be scaled.
             alpha (float): Regulates the amount of shrinkage among the eigenvectors 
@@ -169,7 +171,7 @@ class Denoising():
 
     @staticmethod
     def corr_to_cov(  corr: np.ndarray,
-                   std     ) -> np.ndarray([]): 
+                      std: np.ndarray     ) -> np.ndarray([]): 
         """
         Adapted from Chap. 2 of  "Machine Learning for Asset Managers", by
         - Marcos M. Lopez de Prado - 1st. edition
@@ -178,7 +180,7 @@ class Denoising():
             matrix
         Args:
             corr (np.ndarray): correlation matrix
-    
+            std (np.ndarray): standard deviation matrix
         Returns:
             np.ndarray: covariance matrix
         """
@@ -189,7 +191,7 @@ class Denoising():
     def get_corr_original (self) -> np.ndarray([]): 
         """
         Args:
-            self (object)
+            None.
     
         Returns:
             np.ndarray: original correlation matrix 
@@ -200,7 +202,7 @@ class Denoising():
     def get_cov_original (self) -> np.ndarray([]): 
         """
         Args:
-            self (object)
+            None.
     
         Returns:
             np.ndarray: original covariance matrix 
@@ -211,7 +213,7 @@ class Denoising():
     def get_eval_original (self) -> np.ndarray([]): 
         """
         Args:
-            self (object)
+            None.
     
         Returns:
             np.ndarray: eigenvalues from the original covariance matrix 
@@ -222,7 +224,7 @@ class Denoising():
     def get_evec_original (self) -> np.ndarray([]): 
         """
         Args:
-            self (object)
+            None.
     
         Returns:
             np.ndarray: eigenvectors from the original covariance matrix 
@@ -233,7 +235,7 @@ class Denoising():
     def get_corr_denoised (self) -> np.ndarray([]): 
         """
         Args:
-            self (object)
+            None.
     
         Returns:
             np.ndarray: denoised correlation matrix 
@@ -244,7 +246,7 @@ class Denoising():
     def get_cov_denoised (self) -> np.ndarray([]): 
         """
         Args:
-            self (object)
+            None.
     
         Returns:
             np.ndarray: denoised covariance matrix 
@@ -255,7 +257,7 @@ class Denoising():
     def get_eval_denoised (self) -> np.ndarray([]): 
         """
         Args:
-            self (object)
+            None.
     
         Returns:
             np.ndarray: eigenvalues from the denoised covariance matrix 
@@ -266,7 +268,7 @@ class Denoising():
     def get_evec_denoised (self) -> np.ndarray([]): 
         """
         Args:
-            self (object)
+            None.
     
         Returns:
             np.ndarray: eigenvectors from the denoised covariance matrix 
@@ -383,9 +385,6 @@ class Denoising():
             the denoise and detoning of correlation matrix.
             
         Args:
-            self: object
-                All entries in function __init__.        
-    
             X (pd.DataFrame): Columns of dataframe containing the variables to be
                 used to calculate covariance matrix.
 

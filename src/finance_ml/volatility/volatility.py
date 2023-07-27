@@ -7,6 +7,9 @@ Updated: July 15th
     1. Included parameter 'sl' for CorwinSchultz high-low volatility index
     2. Set return to 'None' for functions cal_CorwinSchultz, cal_GarmanKlass, 
         cal_RogersSatchell, cal_YangZhang and cal_HodgesTompkins
+Updated: July 27th
+    1. Removed dscription of 'self' parameter on function's documentation
+
 """
 # Import required packages
 import pandas as pd
@@ -47,8 +50,6 @@ class Volatility(BaseEstimator, TransformerMixin):
         Initialize data.
             
         Args:
-            self: object
-                All entries in function __init__.        
             data (pd.DataFrame): Columns of dataframe containing the variables 
                 to be scaled.
             col_open (str): column containing the "OPEN" data
@@ -176,8 +177,6 @@ class Volatility(BaseEstimator, TransformerMixin):
             overall market.
             
         Args:
-            self: object
-                All entries in function __init__.        
             sl (int): no. of days for rolling prices
 
         Returns:
@@ -200,8 +199,7 @@ class Volatility(BaseEstimator, TransformerMixin):
             is further away from the money.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             (pd.Series): Gamma values
@@ -222,8 +220,6 @@ class Volatility(BaseEstimator, TransformerMixin):
             index.
             
         Args:
-            self: object
-                All entries in function __init__.        
             beta (pd.Series): beta of data prices
             gamma (pd.Series): gamma of data prices
 
@@ -247,8 +243,6 @@ class Volatility(BaseEstimator, TransformerMixin):
             index.
             
         Args:
-            self: object
-                All entries in function __init__.        
             beta (float): beta of data prices
             gamma (float): gamma of data prices
 
@@ -276,8 +270,7 @@ class Volatility(BaseEstimator, TransformerMixin):
             ticker label in front of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.       
 
         Returns:
             None.
@@ -319,8 +312,7 @@ class Volatility(BaseEstimator, TransformerMixin):
             it was added the ticker label in front of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -347,8 +339,7 @@ class Volatility(BaseEstimator, TransformerMixin):
             it was added the ticker label in front of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -380,8 +371,7 @@ class Volatility(BaseEstimator, TransformerMixin):
             it was added the ticker label in front of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -421,8 +411,7 @@ class Volatility(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -449,8 +438,7 @@ class Volatility(BaseEstimator, TransformerMixin):
         Calculates Corwin-Shultz volatility index over a series or stock prices.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -478,9 +466,6 @@ class Volatility(BaseEstimator, TransformerMixin):
         Calculates Garman-Klass volatility index over a series or stock prices.
             
         Args:
-            self: object
-                All entries in function __init__.        
-            price_data (pd.DataFrame): DataFrame containing stock data
             clean (bool): if 'True', removes 'NaN's; otherwise don't remove
 
         Returns:
@@ -513,9 +498,6 @@ class Volatility(BaseEstimator, TransformerMixin):
         Calculates Rogers-Satchell volatility index over a series or stock prices.
             
         Args:
-            self: object
-                All entries in function __init__.        
-            price_data (pd.DataFrame): DataFrame containing stock data
             clean (bool): if 'True', removes 'NaN's; otherwise don't remove
 
         Returns:
@@ -549,9 +531,6 @@ class Volatility(BaseEstimator, TransformerMixin):
         Calculates Yang-Zang volatility index over a series or stock prices.
             
         Args:
-            self: object
-                All entries in function __init__.        
-            price_data (pd.DataFrame): DataFrame containing stock data
             clean (bool): if 'True', removes 'NaN's; otherwise don't remove
 
         Returns:
@@ -593,9 +572,6 @@ class Volatility(BaseEstimator, TransformerMixin):
         Calculates Hodges-Tompkins volatility index over a series or stock prices.
             
         Args:
-            self: object
-                All entries in function __init__.        
-            price_data (pd.DataFrame): DataFrame containing stock data
             clean (bool): if 'True', removes 'NaN's; otherwise don't remove
 
         Returns:
@@ -630,8 +606,7 @@ class Volatility(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -680,14 +655,11 @@ class Volatility(BaseEstimator, TransformerMixin):
         Method defined for compatibility purposes.
             
         Args:
-            self: object
-                All entries in function __init__.        
-    
             X (pd.DataFrame): Columns of dataframe containing the variables to be
                 used to calculate volatilities.
 
         Returns:
-            self (objext)
+            self (object)
 
         """
         if isinstance(X, pd.Series):               
@@ -705,9 +677,6 @@ class Volatility(BaseEstimator, TransformerMixin):
             calculating the volatility indicators available.
             
         Args:
-            self: object
-                All entries in function __init__.        
-    
             X (pd.DataFrame): Columns of dataframe containing the variables to be
                 used to calculate volatility indicators from.
 
@@ -729,9 +698,6 @@ class Volatility(BaseEstimator, TransformerMixin):
             (This routine is intented to maintaing sklearn Pipeline compatibility)
             
         Args:
-            self: object
-                All entries in function __init__.        
-    
             X (pd.DataFrame): Columns of dataframe containing the variables to be
                 used to calculate the covariance matrix.
 

@@ -9,7 +9,6 @@ Updated: July 15th
 import pytest
 
 import numpy as np
-import pandas as pd
 
 from src.finance_ml.data_preparation.data_preparation import DataLoader
 from src.finance_ml.volatility.volatility import Volatility
