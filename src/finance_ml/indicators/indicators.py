@@ -2,6 +2,14 @@
 Created on Thu May 11 19:00:00 2023
 
 @author: Luis Alvaro Correia
+
+Updated: July 27th
+    1. Removed dscription of 'self' parameter on function's documentation
+    2. Updated function '__cal_SMA()' to receive parameter via 'self'
+    3. Updated function 'calculate_indicators()' to calculate SMA indicator.
+    4. Optimized function 'normalize_data()' to process the whole block of indicators at once.
+    5. Removed the function '__scale_data()' transferring its duties to 'normalize_data()'
+    
 """
 # Import required packages
 import pandas as pd
@@ -73,6 +81,7 @@ class Indicators(BaseEstimator, TransformerMixin):
                  CCI_const: float = 0.015,
                  DPO_win: int = 20,
                  EMA_win: int = 14,
+                 SMA_win: int = 14,
                  ICHI_win1: int = 9,
                  ICHI_win2: int = 26,
                  ICHI_win3: int = 52,
@@ -107,8 +116,6 @@ class Indicators(BaseEstimator, TransformerMixin):
         Initialize data.
             
         Args:
-            self: object
-                All entries in function __init__.        
             data (pd.DataFrame): Columns of dataframe containing the variables 
                 to be scaled.
             col_open (str): column containing the "OPEN" data
@@ -159,6 +166,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             CCI_const (float): constant for Commodity Channel Index
             DPO_win (int): n period for Detrended Price Oscillator
             EMA_win (int): n period for EMA - Exponential Moving Average
+            SMA_win (int): n period for SMA - Simple Moving Average
             ICHI_win1 (int): n1 low period for Ichimoku Kinko Hyo indicator
             ICHI_win2 (int): n2 medium period for Ichimoku Kinko Hyo indicator
             ICHI_win3 (int): n3 high period for Ichimoku Kinko Hyo indicator
@@ -195,7 +203,7 @@ class Indicators(BaseEstimator, TransformerMixin):
         IND_LIST = ['RET', 'LRET', 'PCHG','PCTCHG', 'RA', 'DIFF', 'MA', 'VMA', \
                     'KAMA', 'PPO', 'PVO', 'ROC', 'RSI', 'STRSI', 'SO', 'AOI', \
                     'TSI', 'UO', 'WRI', 'ADI', 'CMF', 'EOM', 'FI', 'MFI', 'NVI', \
-                    'OBV', 'VPT', 'VWAP', 'ADX', 'AROON', 'CCI', 'DPO', 'EMA', \
+                    'OBV', 'VPT', 'VWAP', 'ADX', 'AROON', 'CCI', 'DPO', 'EMA', 'SMA', \
                     'ICHI', 'KST', 'MACD', 'MI', 'PSAR', 'STC', 'TRIX', 'VI', 'WMA']
         SCALE_METHODS = ['MINMAX', 'STANDARD']
 
@@ -345,6 +353,9 @@ class Indicators(BaseEstimator, TransformerMixin):
         if (type(EMA_win) != int) | (EMA_win <= 0):
             raise ValueError('Indicators Class - Parameter EMA_win must be int, positive')
 
+        if (type(SMA_win) != int) | (SMA_win <= 0):
+            raise ValueError('Indicators Class - Parameter SMA_win must be int, positive')
+
         if (type(ICHI_win1) != int) | (ICHI_win1 <= 0):
             raise ValueError('Indicators Class - Parameter ICHI_win1 must be int, positive')
 
@@ -483,6 +494,7 @@ class Indicators(BaseEstimator, TransformerMixin):
         self.__CCI_const = CCI_const
         self.__DPO_win = DPO_win
         self.__EMA_win = EMA_win
+        self.__SMA_win = SMA_win
         self.__ICHI_win1 = ICHI_win1
         self.__ICHI_win2 = ICHI_win2
         self.__ICHI_win3 = ICHI_win3
@@ -517,8 +529,8 @@ class Indicators(BaseEstimator, TransformerMixin):
         return self.__data
 
     @property
-    def norm_data(self) -> pd.DataFrame(dtype=float):
-        return self.__norm_data
+    def data_norm(self) -> pd.DataFrame(dtype=float):
+        return self.__data_norm
 
     @property
     def ticker(self) -> str:
@@ -528,28 +540,6 @@ class Indicators(BaseEstimator, TransformerMixin):
     def scale_method(self):
         return self.__scale_method
 
-    def __scale_data(self, 
-                   col_name:str) -> pd.Series(dtype=float):
-        """
-        Scale data according with the scale_method selected.
-            
-        Args:
-            self: object
-                All entries in function __init__.        
-            colname (str): Column of dataframe containing the variable 
-                to be scaled.
-
-        Returns:
-            (np.array[]): scaled data
-
-        """
-        values = self.__data[col_name].values.reshape(-1,1)
-        if self.scale_method == "minmax":
-            scaler = MinMaxScaler(feature_range=(-1,1))
-        else:
-            scaler = StandardScaler()
-        return scaler.fit_transform(values).flatten()
-
     def __cal_price_change(self) -> None:
         """
         Calculates the price change of a column passed as parameter and creates
@@ -558,8 +548,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             was added the ticker label in front of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -576,8 +565,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             it was added the ticker label in front of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -594,8 +582,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             label in front of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -615,8 +602,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             label in front of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -637,8 +623,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -662,8 +647,6 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
             rol_win1 (int): number rolling of days to calculate the first std() 
             rol_win2 (int): number rolling of days to calculate the second std() 
 
@@ -689,8 +672,6 @@ class Indicators(BaseEstimator, TransformerMixin):
             created.
             
         Args:
-            self: object
-                All entries in function __init__.        
             rol_win1 (int): number rolling of days to calculate the first mean() 
             rol_win2 (int): number rolling of days to calculate the second mean() 
 
@@ -717,8 +698,6 @@ class Indicators(BaseEstimator, TransformerMixin):
             label in front of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
             rol_win1 (int): number rolling of days to calculate the first mean() 
             rol_win2 (int): number rolling of days to calculate the second mean() 
             rol_win3 (int): number rolling of days to calculate the third mean() 
@@ -751,8 +730,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -783,8 +761,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -815,8 +792,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -850,8 +826,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -881,8 +856,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -913,8 +887,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -950,8 +923,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -984,8 +956,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1015,8 +986,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1047,8 +1017,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1098,8 +1067,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1130,8 +1098,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1159,8 +1126,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1192,8 +1158,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1227,8 +1192,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1264,8 +1228,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1296,8 +1259,6 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
             col_close (str): name of the column with the "CLOSE" data prices
             col_volume (str): name of the column with the "VOLUME" data
 
@@ -1328,8 +1289,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1359,8 +1319,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1393,8 +1352,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1435,8 +1393,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1472,8 +1429,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1508,8 +1464,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1541,8 +1496,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1570,8 +1524,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1587,8 +1540,7 @@ class Indicators(BaseEstimator, TransformerMixin):
         field_nm = f'w{self.__EMA_win:02d}'
         self.__data[self.__ticker+"EMA_"+field_nm] = indicator_EMA.ema_indicator().values   
     
-    def __cal_SMA(self,
-                 SMA_win: int) -> None:
+    def __cal_SMA(self) -> None:
         """
         Based on TA Technical Analysis Library in Python from Dario Lopez Padial (Bukosabino)
             https://github.com/bukosabino/ta/blob/master/docs/index.rst
@@ -1600,9 +1552,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
+            None.
 
         Returns:
             None.
@@ -1613,8 +1563,10 @@ class Indicators(BaseEstimator, TransformerMixin):
         df_wrk.columns = ["close"]
         
         # Initialize Simple Moving Average Indicator
-        indicator_SMA = SMAIndicator(close=df_wrk["close"], window = SMA_win)
-        self.__data[self.__ticker+"SMA_"+str(SMA_win)] = indicator_SMA.sma_indicator().values   
+        indicator_SMA = SMAIndicator(close=df_wrk["close"], window = self.__SMA_win)
+
+        field_nm = f'w{self.__SMA_win:02d}'
+        self.__data[self.__ticker+"SMA_"+field_nm] = indicator_SMA.sma_indicator().values   
     
     def __cal_Ichimoku(self) -> None:
         """
@@ -1633,8 +1585,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1671,9 +1622,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
+            None.        
 
         Returns:
             None.
@@ -1710,8 +1659,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1743,8 +1691,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1778,8 +1725,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1818,9 +1764,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
+            None.
 
         Returns:
             None.
@@ -1858,9 +1802,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
-            col_close (str): name of the column with the "CLOSE" data prices
+            None.
 
         Returns:
             None.
@@ -1892,8 +1834,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1923,8 +1864,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -1950,8 +1890,7 @@ class Indicators(BaseEstimator, TransformerMixin):
             added the ticker label in front of all columns created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
@@ -2056,6 +1995,9 @@ class Indicators(BaseEstimator, TransformerMixin):
         if (self.__calc_all) | ('EMA' in self.__list_ind):
             self.__cal_EMA()
 
+        if (self.__calc_all) | ('SMA' in self.__list_ind):
+            self.__cal_SMA()
+
         if (self.__calc_all) | ('ICHI' in self.__list_ind):
             self.__cal_Ichimoku()
 
@@ -2090,19 +2032,26 @@ class Indicators(BaseEstimator, TransformerMixin):
             created.
             
         Args:
-            self: object
-                All entries in function __init__.        
+            None.        
 
         Returns:
             None.
 
         """
         col_names = self.__data.columns
-        
-        self.__norm_data = pd.DataFrame(index = self.__data.index)
+        norm_cols = [col + '_norm' for col in col_names]
 
-        for col in col_names:
-            self.__norm_data[col+'_norm'] = self.__scale_data(col)
+        values = self.__data[col_names].values
+        
+        # Select the appropriate scaler
+        if self.__scale_method == "minmax":
+            scaler = MinMaxScaler(feature_range=(-1,1))
+        else:
+            scaler = StandardScaler()
+            
+        self.__data_norm = pd.DataFrame(data = scaler.fit_transform(values), 
+                                        columns = norm_cols, 
+                                        index = self.__data.index)
 
     def fit(self, 
             X: pd.DataFrame(dtype=float), 
@@ -2112,9 +2061,6 @@ class Indicators(BaseEstimator, TransformerMixin):
         Method defined for compatibility purposes.
             
         Args:
-            self: object
-                All entries in function __init__.        
-    
             X (pd.DataFrame): Columns of dataframe containing the variables to be
                 used to calculate indicators.
 
@@ -2137,9 +2083,6 @@ class Indicators(BaseEstimator, TransformerMixin):
             calculating the indicators.
             
         Args:
-            self: object
-                All entries in function __init__.        
-    
             X (pd.DataFrame): Columns of dataframe containing the variables to be
                 used to calculate indicators from.
 
@@ -2155,7 +2098,7 @@ class Indicators(BaseEstimator, TransformerMixin):
 
         if self.__norm_data:
             self.normalize_data()
-            return self.__norm_data        
+            return self.__data_norm
         else:
             return self.__data
     
@@ -2168,14 +2111,11 @@ class Indicators(BaseEstimator, TransformerMixin):
             (This routine is intented to maintaing sklearn Pipeline compatibility)
             
         Args:
-            self: object
-                All entries in function __init__.        
-    
             X (pd.DataFrame): Columns of dataframe containing the variables to be
                 used to calculate the covariance matrix.
 
         Returns:
-            self (object)
+            self.__data (pd.DataFrame): Dataframe processed with indicators
 
         """
 
