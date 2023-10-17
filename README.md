@@ -1,11 +1,15 @@
 # ML-in-Finance
 
 ## About
-This repository is created as part of the MAP 5922 MAP 4006 course at IME-USP. Its primary objective is to establish a complete pipeline for machine learning applications in finance, specifically focusing on the development and implementation of trading strategies.
+This repository is created as part of the Machine Learning In Finance course. Its primary objective is to establish 
+a complete pipeline for machine learning applications in finance, specifically focusing on the development and implementation of trading strategies.
 
-The pipeline encompasses various stages, including data preparation, feature engineering, model training and evaluation, and strategy execution. Our aim is to provide a comprehensive framework that covers the entire process of developing and testing machine learning-based trading strategies.
+The pipeline encompasses various stages, including data preparation, feature engineering, model training and evaluation, 
+and strategy execution. Our aim is to provide a comprehensive framework that covers the entire process of developing 
+and testing machine learning-based trading strategies.
 
-This README serves as a reference for contributors to the shared GitHub repository used for the course. When adding your code, please consult this README for guidance and feel free to make suggestions to further improve the repository.
+This README serves as a reference for contributors to the shared GitHub repository used for the course. When adding your code, 
+please consult this README for guidance and feel free to make suggestions to further improve the repository.
 
 
 ## Important
