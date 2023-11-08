@@ -1,13 +1,16 @@
 """
 Created on Mon May 8 19:00:00 2023
-
 @Group: 
     Franci Daniele Prochnow Gaensly
     Frederico Alexandre
     Coded by Luis Alvaro Correia
     
-Updated: July 27th
-    1. Removed dscription of 'self' parameter on function's documentation -- test
+Updated: 10 November 2023 by
+@Group:
+    Priyanka Teja Ravi
+    Ramiscan Yakar
+    Tolga Keskinoglu
+
 
 """
 
