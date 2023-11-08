@@ -461,7 +461,7 @@ class Denoising():
             self.__corr1 = self.denoised_corr_shrinkage(self.__eVal0, self.__eVec0, self.__nFacts0) 
             self.__eVal1, self.__eVec1 = self.calc_PCA(self.__corr1)
             if self.__detoning==True:
-                self.corr1=self.detoned_corr(self.corr1,self.__eVal1,self.__eVec1,self.__market_component)
+                self.corr1=self.detoned_corr(self.__corr1,self.__eVal1,self.__eVec1,self.__market_component)
 
         self.__cov1 = self.corr_to_cov(self.__corr1, np.diag(self.__cov0)**.5)
             
