@@ -74,8 +74,8 @@ class Denoising():
         if (type(detoning) != bool) :
             raise ValueError('Denoising Class - Parameter detoning must be bool, either True or False')
         
-        if  (type(market_component) != int) | (market_component>self.shape[1]):
-            raise ValueError('Denoising Class - Parameter market_component must be greater than 1 and less than number of features')
+        if  (type(market_component) != int) | (q < 1) :
+            raise ValueError('Denoising Class - Parameter market_component must be int and greater than 1')
         
         self.__alpha = alpha    
         self.__pts = pts
@@ -383,6 +383,10 @@ class Denoising():
         Returns:
             corr (np.ndarray):  De-toned correlation matrix.
         """
+        
+        if (market_component>corr1.shape[1]):
+            raise ValueError('Parameter market_component must less than number of features in denoised correlation matrix')
+        
         eigenvalues_market = eVal[:market_component, :market_component]
         eigenvectors_market = eVec[:, :market_component]
         corr_market = np.dot(eigenvectors_market, eigenvalues_market).dot(eigenvectors_market.T)
