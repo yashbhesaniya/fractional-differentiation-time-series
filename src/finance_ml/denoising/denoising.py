@@ -31,6 +31,8 @@ class Denoising():
                  q: float = 10.,
                  method: str = 'constant_residuals',
                  bWidth: float = 0.01,
+                 detoning: bool=False,
+                 market_component: int=1
                  ):
         """
         Initialize data.
@@ -45,6 +47,7 @@ class Denoising():
             q (float): T/N where T is the no. of rows and N the no. of columns
             method (str): Method for denoising ['constant_residuals', 'shrinkage']
             bWidth (float): The bandwidth of the kernel
+            detoning (bool): Boolean for appyling detoning, default False
 
         Returns:
             None
@@ -68,12 +71,20 @@ class Denoising():
         if (type(q) != float) | (q <= 1.0):
             raise ValueError('Denoising Class - Parameter q=T/N must be float, greater than 1.0')
         
+        if (type(detoning) != bool) :
+            raise ValueError('Denoising Class - Parameter detoning must be bool, either True or False')
+        
+        if  (type(market_component) != int) | (market_component<self.shape[1]):
+            raise ValueError('Denoising Class - Parameter market_component must be greater than 1 and less than number of features')
+        
         self.__alpha = alpha    
         self.__pts = pts
         self.__nFacts = nFacts
         self.__q = q
         self.__method = method
         self.__bWidth = bWidth
+        self.__detoning=detoning
+        self.__market_component=market_component
             
     def calc_PDF(self,
               var: float  ) -> pd.Series(dtype = float):
@@ -352,6 +363,34 @@ class Denoising():
         corr1 = self.cov_to_corr(corr1)
         return corr1
  
+    def detoned_corr(self, 
+                     corr1: np.ndarray,
+                     eVal: np.ndarray,
+                     eVec: np.ndarray,
+                     market_component: int ) -> np.ndarray([]):   
+        """
+        Adapted from Chap. 2 of  "Machine Learning for Asset Managers", by
+        - Marcos M. Lopez de Prado - 1st. edition
+        
+        De-tones the de-noised correlation matrix by removing the market component.
+
+        Args:
+            corr (np.ndarray): De-noised Correlation Matrix
+            eVal (np.ndarray): Eigenvalues of Correlation Matrix
+            eVec (np.ndarray): Eigenectors of Correlation Matrix
+            market_component (int): Number of fist eigevectors related to a market component. (1 by default)
+    
+        Returns:
+            corr (np.ndarray):  De-toned correlation matrix.
+        """
+        eigenvalues_market = eVal[:market_component, :market_component]
+        eigenvectors_market = eVec[:, :market_component]
+        corr_market = np.dot(eigenvectors_market, eigenvalues_market).dot(eigenvectors_market.T)
+        corr1 = corr1 - corr_market
+        corr1 = self.cov_to_corr(corr1) #Rescaling the correlation matrix to have 1s on the main diagonal
+        return corr1
+
+
     def denoised_corr_shrinkage(self, 
                        eVal: np.ndarray,
                        eVec: np.ndarray,
@@ -410,10 +449,15 @@ class Denoising():
         if self.__method == 'constant_residuals':
             self.__corr1 = self.denoised_corr(self.__eVal0, self.__eVec0, self.__nFacts0)
             self.__eVal1, self.__eVec1 = self.calc_PCA(self.__corr1)
+            if self.__detoning==True:
+                self.corr1=self.detoned_corr(self.corr1,self.__eVal1,self.__eVec1,self.__market_component)
+
         else:
         #----- Denoising The Corr Matrix - Targeting Shrinkage
             self.__corr1 = self.denoised_corr_shrinkage(self.__eVal0, self.__eVec0, self.__nFacts0) 
             self.__eVal1, self.__eVec1 = self.calc_PCA(self.__corr1)
+            if self.__detoning==True:
+                self.corr1=self.detoned_corr(self.corr1,self.__eVal1,self.__eVec1,self.__market_component)
 
         self.__cov1 = self.corr_to_cov(self.__corr1, np.diag(self.__cov0)**.5)
             
