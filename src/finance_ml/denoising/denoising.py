@@ -385,7 +385,7 @@ class Denoising():
         """
         
         if (market_component>corr1.shape[1]):
-            raise ValueError('Parameter market_component must less than number of features in denoised correlation matrix')
+            raise ValueError(f'Parameter market_component must less than the number of features in denoised correlation matrix: {corr1.shape[1]}')
         
         eigenvalues_market = eVal[:market_component, :market_component]
         eigenvectors_market = eVec[:, :market_component]
