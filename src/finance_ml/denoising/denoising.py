@@ -74,7 +74,7 @@ class Denoising():
         if (type(detoning) != bool) :
             raise ValueError('Denoising Class - Parameter detoning must be bool, either True or False')
         
-        if  (type(market_component) != int) | (q < 1) :
+        if  (type(market_component) != int) | (market_component < 1) :
             raise ValueError('Denoising Class - Parameter market_component must be int and greater than 1')
         
         self.__alpha = alpha    

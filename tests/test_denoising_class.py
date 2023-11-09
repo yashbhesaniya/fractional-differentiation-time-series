@@ -2,6 +2,12 @@
 Created on Tue May 16 13:00:00 2023
 
 @Group: Luis Alvaro Correia
+
+Updated: 10 November 2023 by
+@Group:
+    Priyanka Teja Ravi
+    Ramiscan Yakar
+    Tolga Keskinoglu
 """
 import pytest
 
@@ -64,3 +70,10 @@ def test_denoising_param_q():
     with pytest.raises(ValueError):
         assert Denoising(q = 0.15)
         
+def test_denoising_param_market_component():
+    with pytest.raises(ValueError):
+        assert Denoising(market_component = -1)
+  
+def test_denoising_param_detoning():
+    with pytest.raises(ValueError):
+        assert Denoising(detoning = 1)
