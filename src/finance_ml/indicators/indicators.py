@@ -1435,12 +1435,12 @@ class Indicators(BaseEstimator, TransformerMixin):
             None.
 
         """
-        values = self.__data[[self.__col_close]].values
+        values = self.__data[[self.__col_high,self.__col_low,self.__col_close]].values
         df_wrk = pd.DataFrame(values)
-        df_wrk.columns = ["close"]
+        df_wrk.columns = ["high","low","close"]
         
         # Initialize Aroon Indicator
-        indicator_AROON = AroonIndicator(close=df_wrk["close"], window = self.__AROON_win)
+        indicator_AROON = AroonIndicator(low=df_wrk["low"],high = df_wrk["high"], window = self.__AROON_win)
 
         field_nm = f'w{self.__AROON_win:02d}'
         self.__data[self.__ticker+"AROOND_"+field_nm] = indicator_AROON.aroon_down().values   
