@@ -12,7 +12,7 @@ import pandas as pd
 from tqdm import tqdm
 from datetime import datetime
 from numpy.testing import assert_almost_equal
-from src.finance_ml.data_preparation.class_dataTransformer import DataTransformer
+from src.finance_ml.data_preparation.dataTransformer_class import DataTransformer
 
 start_date = datetime.strptime("2022-10-17", "%Y-%m-%d")
 end_date = datetime.strptime("2022-10-21", "%Y-%m-%d")
