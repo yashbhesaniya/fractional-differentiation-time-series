@@ -1,7 +1,9 @@
 # Folders
 /build
 /dist
-/financeml_env
+financeml_env/
+.vscode/
+.ipynb_checkpoints/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
