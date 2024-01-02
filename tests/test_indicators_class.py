@@ -119,6 +119,7 @@ def test_indicators():
     assert isinstance(indicator_processor._Indicators__TRIX_win, int)
     assert isinstance(indicator_processor._Indicators__VI_win, int)
     assert isinstance(indicator_processor._Indicators__WMA_win, int)
+    assert isinstance(indicator_processor._Indicators__HMA_win, int)
 
     df = indicator_processor.fit_transform(df)
 
@@ -433,5 +434,9 @@ def test_indicators_param_VI_win():
 def test_indicators_param_WMA_win():
     with pytest.raises(ValueError):
         assert Indicators(WMA_win = -5.26755227536053)
+
+def test_indicators_param_HMA_win():
+    with pytest.raises(ValueError):
+        assert Indicators(HMA_win = -5.26755227536053)
 
 
