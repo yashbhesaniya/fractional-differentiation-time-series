@@ -11,7 +11,6 @@ Updated: 10 November 2023 by
     Ramiscan Yakar
     Tolga Keskinoglu
 
-
 """
 
 # Import required packages
@@ -28,7 +27,7 @@ class Denoising():
                  alpha: float = 0.5,
                  pts: int = 1000,
                  nFacts: int = 100,
-                 q: float = 10.,
+                 q: float = None,
                  method: str = 'constant_residuals',
                  bWidth: float = 0.01,
                  detoning: bool=False,
@@ -68,8 +67,8 @@ class Denoising():
         if  (type(pts) != int) | (pts <= 1):
             raise ValueError('Denoising Class - Parameter pts must be greater than 1')
             
-        if (type(q) != float) | (q <= 1.0):
-            raise ValueError('Denoising Class - Parameter q=T/N must be float, greater than 1.0')
+        if (q != None) and ((type(q) != float ) | (q <= 1.0)):
+            raise ValueError('Denoising Class - Parameter q=T/N must be None or float, greater than 1.0')
         
         if (type(detoning) != bool) :
             raise ValueError('Denoising Class - Parameter detoning must be bool, either True or False')
@@ -81,13 +80,16 @@ class Denoising():
         self.__pts = pts
         self.__nFacts = nFacts
         self.__q = q
+        self.__T = None
+        self.__N = None
         self.__method = method
         self.__bWidth = bWidth
         self.__detoning=detoning
         self.__market_component=market_component
             
-    def calc_PDF(self,
-              var: float  ) -> pd.Series(dtype = float):
+    def calc_PDF(self, # calc Marchenko-Pastur pdf
+              var: float,
+              q: float = None) -> pd.Series(dtype = float):
         """
         Adapted from Chap. 2 of  "Machine Learning for Asset Managers", by
         - Marcos M. Lopez de Prado - 1st. edition
@@ -100,14 +102,23 @@ class Denoising():
         """
         # Marchenko-Pastur pdf
         # q=T/N
+
+        if q is None:
+            if self.get_q is None:
+                raise ValueError('Denoising Class - Parameter q=T/N must be provided, either manually or by providing data matrix with run_denoising method')
+            else:
+                q = self.get_q
+               
         # Adjusting code to work with 1 dimension arrays
         if isinstance(var, np.ndarray):
             if var.shape == (1,):
                 var = var[0]
-        eMin, eMax = var * (1 - (1. / self.__q) ** .5) ** 2, var * (1 + (1. / self.__q) ** .5) ** 2
+
+        eMin, eMax = var * (1 - (1. / q) ** .5) ** 2, var * (1 + (1. / q) ** .5) ** 2
         eVal = np.linspace(eMin, eMax, self.__pts)
-        pdf = self.__q / (2 * np.pi * var * eVal) * ((eMax - eVal) * (eVal - eMin)) ** .5
+        pdf = q / (2 * np.pi * var * eVal) * ((eMax - eVal) * (eVal - eMin)) ** .5
         pdf = pd.Series(pdf, index=eVal)
+
         return pdf
     
     def fit_KDE(self, 
@@ -288,10 +299,77 @@ class Denoising():
             np.ndarray: eigenvectors from the denoised covariance matrix 
         """
         return self.__eVec1
+    
+    @property
+    def get_q (self) -> float:
+        """
+        Args:
+            None.
+    
+        Returns:
+            float: q parameter
+        """
+        return self.__q
+    
+    @get_q.setter
+    def set_q (self, q: float):
+        """
+        Args:
+            q (float): q parameter
+    
+        Returns:
+            None
+        """
+        self.__q = q
+    
+    @property
+    def get_T (self) -> float:
+        """
+        Args:
+            None.
+    
+        Returns:
+            float: T parameter
+        """
+        return self.__T
+    
+    @get_T.setter
+    def set_T (self, T: float):
+        """
+        Args:
+            T (float): T parameter
+    
+        Returns:
+            None
+        """
+        self.__T = T
+    
+    @property
+    def get_N (self) -> float:
+        """
+        Args:
+            None.
+    
+        Returns:
+            float: N parameter
+        """
+        return self.__N
+    
+    @get_N.setter
+    def set_N (self, N: float):
+        """
+        Args:
+            N (float): N parameter
+    
+        Returns:
+            None
+        """
+        self.__N = N
 
     def err_PDFs(self, 
-                var: float, 
-                eVal: np.ndarray  ) -> float:
+                var: float,
+                eVal: np.ndarray,
+                q: float = None) -> float:
         """
         Adapted from Chap. 2 of  "Machine Learning for Asset Managers", by
         - Marcos M. Lopez de Prado - 1st. edition
@@ -304,14 +382,16 @@ class Denoising():
         Returns:
             float: sum squared error
         """
-        # Fit error
-        pdf0 = self.calc_PDF(var)  # theoretical pdf
+
+        pdf0 = self.calc_PDF(var, q) # theoretical pdf
+
         pdf1 = self.fit_KDE(eVal, x = pdf0.index.values)  # empirical pdf
         sse = np.sum((pdf1 - pdf0) ** 2)
         return sse
     
     def find_max_eval(self, 
-                    eVal: np.ndarray  ) -> (float, float):
+                    eVal: np.ndarray,
+                      q = None  ) -> (float, float):
         """
         Adapted from Chap. 2 of  "Machine Learning for Asset Managers", by
         - Marcos M. Lopez de Prado - 1st. edition
@@ -327,15 +407,49 @@ class Denoising():
                 float: Variance attributed to noise (1-result) is one way to measure
                     signal-to-noise
         """
-    
-        out = minimize(lambda *x: self.err_PDFs(*x), .5, args = (eVal),   
-                       bounds = ((1E-5, 1 - 1E-5),))
-        if out['success']:
-            var = out['x'][0]
+        """
+        Updated on 10 November 2023
+        
+        Adding q as a parameter to the optimization function.
+        Not present in the "Machine Learning for Asset Managers" book.
+        """
+
+        if q is None: # q not proivded during initialization
+            if self.get_q is None: # q never calculated during run_denoising method
+                raise ValueError('Denoising Class - Parameter q=T/N must be provided, either manually or by providing data matrix with run_denoising method')
+            
+            # Optimizing condition met: q not set manually and calculated during run_denoising method
+            else:
+                try:
+                    q = self.get_q
+                except TypeError:  # If T or N are not set during class initialization
+                    raise ValueError("No q value available. Either set q manually or proivde data matrix with run_denoising method.")
+            
+                # initial guess for var and q
+                x0 = [0.5, q/2]
+
+                # bounds for var and q
+                bounds = ((1E-5, 1 - 1E-5), (1.00001, q))
+        
+                out = minimize(lambda x: self.err_PDFs(var=x[0], eVal=eVal, q=x[1]), x0, bounds=bounds)
+
+                if out['success']:
+                    var, q = out['x'][0], out['x'][1]
+                else:
+                    var, q = 1, q.item()
+
+        # q manually proivded, no optimization needed
         else:
-            var = 1
-        eMax = var * (1 + (1. / self.__q) ** .5) ** 2
-        return eMax, var
+            out = minimize(lambda *x: self.err_PDFs(*x), .5, args = (eVal),   
+            bounds = ((1E-5, 1 - 1E-5),))
+            
+            if out['success']:
+                var = out['x'][0]
+            else:
+                var = 1
+
+        eMax = var * (1 + (1. / q) ** .5) ** 2
+        return eMax, var, float(q)
     
     def denoised_corr(self, 
                      eVal: np.ndarray,
@@ -438,6 +552,11 @@ class Denoising():
             self (object)
 
         """
+        self.set_T = X.shape[0]
+        self.set_N = X.shape[1]
+
+        self.set_q = self.get_T / self.get_N
+
         self.__cov0 = np.cov(X, rowvar = 0)
         
         # Converting Covariancce to Correlation
@@ -446,7 +565,7 @@ class Denoising():
         self.__eVal0, self.__eVec0 = self.calc_PCA(self.__corr0)
         
         # Getting Max Eigenvalues and calculating variance attributed to noise
-        eMax0, var0 = self.find_max_eval(np.diag(self.__eVal0))
+        eMax0, var0, q0 = self.find_max_eval(np.diag(self.__eVal0))
         self.__nFacts0 = self.__eVal0.shape[0] - np.diag(self.__eVal0)[::-1].searchsorted(eMax0)
 
         #----- Denoising The Corr Matrix - Residual Eigenvalue
@@ -465,5 +584,5 @@ class Denoising():
 
         self.__cov1 = self.corr_to_cov(self.__corr1, np.diag(self.__cov0)**.5)
             
-        return self
+        return self, var0, q0
         
